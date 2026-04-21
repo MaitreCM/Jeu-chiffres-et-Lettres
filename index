@@ -1,0 +1,1488 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chiffres & Lettres — CM1/CM2</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue:        #1a6bbf;
+    --blue-light:  #d0e8ff;
+    --blue-mid:    #4a90d9;
+    --blue-dark:   #0a2d54;
+    --green:       #2a7518;
+    --green-light: #daf0d4;
+    --yellow:      #f5c842;
+    --yellow-dark: #6a5000;
+    --bg:          #2a2e38;
+    --bg2:         #1e2229;
+    --card:        #353a46;
+    --card2:       #404754;
+    --text:        #f0f2f7;
+    --text-muted:  #9aa0b0;
+    --border:      #4a5060;
+    --shadow:      0 6px 24px rgba(0,0,0,0.35);
+    --radius:      16px;
+    --radius-sm:   10px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  /* =========== ÉCRANS =========== */
+  .screen { display: none; position: fixed; inset: 0; overflow: hidden; }
+  .screen.active { display: flex; flex-direction: column; }
+
+  /* =========== MENU =========== */
+  #screen-menu {
+    align-items: center; justify-content: center;
+    gap: 2.5vh; padding: 3vh 4vw;
+    background: linear-gradient(145deg, #12192a 0%, #0a0f1a 100%);
+  }
+  .menu-logo {
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(3rem, 7.5vw, 7rem);
+    color: #fff; text-align: center;
+    letter-spacing: 2px; line-height: 1;
+    text-shadow: 0 4px 24px rgba(0,0,0,0.6);
+  }
+  .menu-logo span.amp { color: var(--yellow); }
+  .menu-sub { font-size: clamp(1rem, 2vw, 1.7rem); color: rgba(255,255,255,0.45); text-align: center; font-weight: 600; }
+  .menu-cards { display: flex; gap: 3vw; justify-content: center; flex-wrap: wrap; width: 100%; max-width: 1100px; }
+  .menu-card {
+    background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.1);
+    border-radius: 24px; padding: 3.5vh 6vw; cursor: pointer;
+    transition: transform 0.2s, background 0.2s, border-color 0.2s;
+    text-align: center; flex: 1; min-width: 260px; max-width: 420px;
+  }
+  .menu-card:hover { transform: translateY(-6px); background: rgba(255,255,255,0.11); border-color: rgba(255,255,255,0.25); }
+  .menu-card-icon { font-size: clamp(2.8rem, 6vw, 5.5rem); display: block; margin-bottom: 0.5em; }
+  .menu-card-title { font-family: 'Fredoka One', cursive; font-size: clamp(2rem, 4vw, 3.5rem); margin-bottom: 0.4em; }
+  .menu-card.lettres  .menu-card-title { color: #7ec8ff; }
+  .menu-card.chiffres .menu-card-title { color: #ffcc80; }
+  .menu-card-desc { font-size: clamp(0.9rem, 1.5vw, 1.2rem); color: rgba(255,255,255,0.38); line-height: 1.5; }
+
+  /* =========== LAYOUT JEU =========== */
+  #screen-lettres, #screen-chiffres { padding: 1.5vh 2.5vw; background: var(--bg); }
+  .game-wrap { width: 100%; height: 100%; max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 0.8vh; overflow: hidden; }
+
+  .game-topbar { display: flex; align-items: center; gap: 1rem; padding-bottom: 1vh; border-bottom: 2px solid var(--border); flex-shrink: 0; }
+  .btn-back {
+    font-family: 'Nunito', sans-serif; font-size: clamp(0.95rem, 1.4vw, 1.2rem); font-weight: 700;
+    padding: 0.4rem 1rem; border-radius: var(--radius-sm); border: 2px solid var(--border);
+    background: var(--card); cursor: pointer; color: var(--text-muted); transition: all 0.15s; flex-shrink: 0;
+  }
+  .btn-back:hover { border-color: #888; color: var(--text); }
+  .game-title { font-family: 'Fredoka One', cursive; font-size: clamp(1.8rem, 3.5vw, 3rem); }
+  .game-title.lettres  { color: #7ec8ff; }
+  .game-title.chiffres { color: #ffcc80; }
+
+  /* =========== SECTIONS =========== */
+  .section { display: none; flex: 1; flex-direction: column; justify-content: space-evenly; align-items: center; overflow: hidden; }
+  .section.visible { display: flex; }
+
+  /* =========== BADGE =========== */
+  .phase-badge { font-size: clamp(0.9rem, 1.5vw, 1.3rem); font-weight: 700; padding: 0.3rem 1.1rem; border-radius: 30px; flex-shrink: 0; }
+  .phase-badge.lettres  { background: #1a3a5c; color: #7ec8ff; }
+  .phase-badge.chiffres { background: #3a2810; color: #ffcc80; }
+
+  /* =========== TUILES =========== */
+  .tiles-row { display: flex; gap: clamp(8px, 1.2vw, 18px); justify-content: center; align-items: center; flex-shrink: 0; }
+
+  .letter-tile {
+    width: clamp(65px, 10vw, 130px); height: clamp(78px, 12.5vw, 155px);
+    border-radius: var(--radius); display: flex; align-items: center; justify-content: center;
+    font-family: 'Nunito', sans-serif; font-weight: 700;
+    font-size: clamp(2.2rem, 5.8vw, 6.5rem);
+    border: 3px solid var(--blue-mid); background: var(--blue-dark); color: #a8d4ff;
+    box-shadow: var(--shadow); user-select: none;
+  }
+  .letter-tile.just-drawn { animation: popIn 0.32s cubic-bezier(.34,1.56,.64,1); }
+  .letter-tile.empty { background: var(--card); color: #555; border: 3px dashed var(--border); box-shadow: none; font-size: clamp(1rem, 2.5vw, 2.5rem); }
+
+  .num-tile {
+    min-width: clamp(70px, 10vw, 130px); height: clamp(78px, 12.5vw, 155px);
+    padding: 0 clamp(8px, 1vw, 16px); border-radius: var(--radius);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Nunito', sans-serif; font-weight: 700;
+    font-size: clamp(2.2rem, 5vw, 5.8rem);
+    border: 3px solid var(--blue-mid); background: var(--blue-dark); color: #a8d4ff;
+    box-shadow: var(--shadow); user-select: none;
+  }
+  .num-tile.just-drawn { animation: popIn 0.32s cubic-bezier(.34,1.56,.64,1); }
+  .num-tile.empty-tile { background: var(--card); border: 3px dashed var(--border); color: #555; box-shadow: none; }
+
+  @keyframes popIn { 0% { transform: scale(0.3); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+  /* =========== LABELS =========== */
+  .count-label { font-size: clamp(0.9rem, 1.4vw, 1.2rem); color: var(--text-muted); font-weight: 700; text-align: center; flex-shrink: 0; }
+
+  /* =========== SÉLECTEUR TEMPS =========== */
+  .time-choice-label { font-size: clamp(1rem, 1.5vw, 1.4rem); font-weight: 700; color: var(--text-muted); text-align: center; margin-bottom: 0.5vh; }
+  .time-btns { display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: center; }
+  .time-btn {
+    font-family: 'Nunito', sans-serif; font-size: clamp(0.95rem, 1.4vw, 1.25rem); font-weight: 800;
+    padding: 0.45rem 1.1rem; border-radius: 40px; border: 2px solid var(--border);
+    background: var(--card); cursor: pointer; transition: all 0.15s; color: var(--text);
+  }
+  .time-btn:hover { border-color: #7ec8ff; color: #7ec8ff; }
+  .time-btn.selected          { background: var(--blue); color: #fff; border-color: var(--blue-mid); }
+  .time-btn.selected.ch-sel   { background: #5a4010; color: #ffcc80; border-color: #a07030; }
+
+  /* =========== BOUTONS ACTION =========== */
+  .action-btns { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; flex-shrink: 0; }
+  .btn-action {
+    font-family: 'Nunito', sans-serif; font-weight: 800;
+    font-size: clamp(1.1rem, 1.7vw, 1.55rem); padding: 0.65rem 1.9rem;
+    border-radius: 50px; border: none; cursor: pointer;
+    transition: all 0.15s; box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+  }
+  .btn-action:hover   { transform: translateY(-2px); box-shadow: 0 7px 20px rgba(0,0,0,0.4); }
+  .btn-action:active  { transform: translateY(0); }
+  .btn-action:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  .btn-blue     { background: var(--blue); color: #fff; }
+  .btn-outline  { background: transparent; color: #7ec8ff; border: 2px solid #7ec8ff; }
+  .btn-outline:hover { background: rgba(126,200,255,0.1); }
+  .btn-amber    { background: #5a4010; color: #ffcc80; border: 2px solid #a07030; }
+  .btn-amber:hover { background: #6a5020; }
+  .btn-outline-a { background: transparent; color: #ffcc80; border: 2px solid #a07030; }
+  .btn-outline-a:hover { background: rgba(255,204,128,0.1); }
+  .btn-start    { background: var(--green); color: #fff; font-size: clamp(1.2rem, 1.9vw, 1.7rem); padding: 0.75rem 2.4rem; }
+  .btn-gray     { background: #3a3f4a; color: var(--text-muted); border: 2px solid var(--border); }
+  .btn-gray:hover { color: var(--text); border-color: #888; }
+  .btn-yellow   { background: var(--yellow); color: var(--yellow-dark); }
+  .btn-yellow:hover { background: #f0c030; }
+
+  /* =========== BARRE DE TEMPS =========== */
+  .timer-section { display: flex; flex-direction: column; align-items: center; width: 100%; flex-shrink: 0; padding: 0.5vh 0; }
+  .timer-bar-wrap {
+    width: 88%; max-width: 920px; height: clamp(24px, 3.2vh, 40px);
+    background: var(--bg2); border-radius: 30px; overflow: hidden;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.4);
+  }
+  .timer-bar { height: 100%; width: 100%; border-radius: 30px; }
+  .timer-bar.lettres  { background: linear-gradient(90deg, #1a6bbf, #4a9fe8); }
+  .timer-bar.chiffres { background: linear-gradient(90deg, #7a5a10, #c8960a); }
+
+  /* =========== CIBLE =========== */
+  .cible-box { background: var(--card); border-radius: var(--radius); border: 2px solid var(--border); padding: 0.6vh 3.5vw; text-align: center; box-shadow: var(--shadow); flex-shrink: 0; }
+  .cible-label { font-size: clamp(0.85rem, 1.2vw, 1.1rem); color: var(--text-muted); font-weight: 700; }
+  .cible-num { font-family: 'Fredoka One', cursive; font-size: clamp(3.5rem, 10vw, 9rem); color: var(--text); line-height: 1; }
+
+  /* =========== SOLUTION =========== */
+  .solution-box {
+    background: #1a2e1a; border: 2px solid #3a6a2a; border-radius: var(--radius);
+    padding: 1.5vh 2.5vw; text-align: center; width: 90%; max-width: 900px;
+    animation: fadeIn 0.4s ease; flex-shrink: 0;
+  }
+  .solution-title { font-family: 'Fredoka One', cursive; font-size: clamp(1.3rem, 2.5vw, 2.2rem); color: #6ecf5a; margin-bottom: 0.3rem; }
+  .solution-content { font-size: clamp(1.1rem, 2vw, 1.8rem); font-weight: 700; color: #c8f0be; line-height: 1.6; word-break: break-word; }
+  .solution-content span.hl { font-family: 'Fredoka One', cursive; font-size: 1.2em; color: #8edd76; }
+  .solution-words { font-size: clamp(0.9rem, 1.5vw, 1.3rem); color: #a0d890; line-height: 1.8; margin-top: 0.4rem; }
+
+  @keyframes fadeIn { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: translateY(0); } }
+
+  .loading-spinner {
+    display: inline-block; width: 18px; height: 18px;
+    border: 3px solid rgba(255,255,255,0.15); border-top-color: #6ecf5a;
+    border-radius: 50%; animation: spin 0.7s linear infinite;
+    margin-right: 7px; vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* =========== MODALE ERREUR =========== */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200; animation: fadeIn 0.2s ease;
+  }
+  .modal-box {
+    background: var(--card); border-radius: 20px; padding: 2.5rem 3rem;
+    text-align: center; max-width: 520px; width: 90%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6); border: 2px solid var(--border);
+  }
+  .modal-icon { font-size: 3.5rem; display: block; margin-bottom: 0.6rem; }
+  .modal-title { font-family: 'Fredoka One', cursive; font-size: clamp(1.6rem, 3vw, 2.4rem); color: var(--text); margin-bottom: 0.5rem; }
+  .modal-msg { font-size: clamp(1rem, 1.6vw, 1.3rem); color: var(--text-muted); line-height: 1.5; margin-bottom: 1.5rem; }
+  .modal-ok {
+    font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 1.2rem;
+    padding: 0.6rem 2rem; border-radius: 40px; border: none;
+    background: var(--blue); color: #fff; cursor: pointer; transition: all 0.15s;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+  }
+  .modal-ok:hover { background: #2278d0; transform: translateY(-2px); }
+
+  /* =========== MODALE RÉPONSES ÉLÈVES =========== */
+  .answers-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200; animation: fadeIn 0.25s ease;
+  }
+  .answers-box {
+    background: var(--bg2); border-radius: 20px; padding: 2rem 2.5rem;
+    max-width: 720px; width: 94%; max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.7); border: 2px solid var(--border);
+  }
+  .answers-title { font-family: 'Fredoka One', cursive; font-size: clamp(1.4rem, 2.5vw, 2rem); color: var(--text); margin-bottom: 1rem; text-align: center; }
+  .answers-subtitle { font-size: clamp(0.85rem, 1.3vw, 1.1rem); color: var(--text-muted); text-align: center; margin-bottom: 1.2rem; }
+
+  .answers-input-row { display: flex; gap: 0.7rem; margin-bottom: 1rem; }
+  .answers-input {
+    flex: 1; font-family: 'Nunito', sans-serif; font-weight: 700; font-size: clamp(1.1rem, 1.8vw, 1.4rem);
+    padding: 0.6rem 1rem; border-radius: var(--radius-sm); border: 2px solid var(--border);
+    background: var(--card); color: var(--text); outline: none; text-transform: uppercase;
+  }
+  .answers-input:focus { border-color: var(--blue-mid); }
+  .answers-input.chiffres-i { text-transform: none; }
+  .btn-add-answer {
+    font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 1.1rem;
+    padding: 0.6rem 1.4rem; border-radius: var(--radius-sm); border: none;
+    background: var(--blue); color: #fff; cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  }
+  .btn-add-answer:hover { background: #2278d0; }
+
+  .answers-list { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.2rem; min-height: 40px; }
+  .answer-item {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--card); border-radius: var(--radius-sm); padding: 0.5rem 1rem;
+    border: 2px solid var(--border); animation: popIn 0.2s ease;
+  }
+  .answer-item.correct  { border-color: #3a8a2a; background: #1a2e1a; }
+  .answer-item.close    { border-color: #7a6a10; background: #2a2510; }
+  .answer-item.wrong    { border-color: #6a2020; background: #2a1010; }
+  .answer-word   { font-family: 'Nunito', sans-serif; font-weight: 700; font-size: clamp(1.1rem, 1.8vw, 1.4rem); color: var(--text); }
+  .answer-badge  { font-size: clamp(0.75rem, 1.1vw, 0.95rem); font-weight: 700; padding: 0.2rem 0.7rem; border-radius: 20px; }
+  .badge-correct { background: #3a8a2a; color: #c8f0be; }
+  .badge-close   { background: #7a6a10; color: #ffe090; }
+  .badge-wrong   { background: #6a2020; color: #ffb0b0; }
+  .badge-neutral { background: var(--card2); color: var(--text-muted); }
+  .answer-del { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem; padding: 0 0.3rem; }
+  .answer-del:hover { color: #ff8080; }
+
+  .answers-footer { display: flex; gap: 0.8rem; justify-content: center; flex-wrap: wrap; margin-top: 0.5rem; }
+  .btn-show-sol {
+    font-family: 'Nunito', sans-serif; font-weight: 800; font-size: clamp(1rem, 1.5vw, 1.2rem);
+    padding: 0.6rem 1.6rem; border-radius: 40px; border: none;
+    background: var(--yellow); color: var(--yellow-dark); cursor: pointer; transition: all 0.15s;
+  }
+  .btn-show-sol:hover { background: #f0c030; transform: translateY(-2px); }
+  .btn-close-answers {
+    font-family: 'Nunito', sans-serif; font-weight: 800; font-size: clamp(1rem, 1.5vw, 1.2rem);
+    padding: 0.6rem 1.6rem; border-radius: 40px; border: 2px solid var(--border);
+    background: var(--card); color: var(--text-muted); cursor: pointer; transition: all 0.15s;
+  }
+  .btn-close-answers:hover { color: var(--text); border-color: #888; }
+
+  .sol-inline { background: #1a2e1a; border: 2px solid #3a6a2a; border-radius: var(--radius-sm); padding: 0.8rem 1rem; margin-top: 0.8rem; }
+  .sol-inline-title { font-size: 0.9rem; color: #6ecf5a; font-weight: 700; margin-bottom: 0.3rem; }
+  .sol-inline-content { font-size: clamp(1rem, 1.6vw, 1.3rem); color: #c8f0be; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<!-- ======================== MENU ======================== -->
+<div id="screen-menu" class="screen active">
+  <div class="menu-logo">Chiffres <span class="amp">&amp;</span> Lettres</div>
+  <div class="menu-sub">Jeu de classe — CM1 / CM2</div>
+  <div class="menu-cards">
+    <div class="menu-card lettres" onclick="startGame('lettres')">
+      <span class="menu-card-icon">🔤</span>
+      <div class="menu-card-title">Les Lettres</div>
+      <div class="menu-card-desc">Forme le plus long mot possible avec les 9 lettres tirées.</div>
+    </div>
+    <div class="menu-card chiffres" onclick="startGame('chiffres')">
+      <span class="menu-card-icon">🔢</span>
+      <div class="menu-card-title">Les Chiffres</div>
+      <div class="menu-card-desc">Atteins le nombre cible en combinant les 6 plaques.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================== JEU LETTRES ======================== -->
+<div id="screen-lettres" class="screen">
+  <div class="game-wrap">
+    <div class="game-topbar">
+      <button class="btn-back" onclick="backMenu()">← Menu</button>
+      <span class="game-title lettres">🔤 Les Lettres</span>
+    </div>
+    <!-- Étape 1 -->
+    <div id="lt-tirage" class="section visible">
+      <span class="phase-badge lettres">Étape 1 — Tirage des lettres</span>
+      <div class="tiles-row" id="lt-tiles-draw"></div>
+      <div class="count-label" id="lt-count">0 / 9 lettres tirées</div>
+      <div>
+        <div class="time-choice-label">⏱ Temps de réponse :</div>
+        <div class="time-btns" id="lt-time-btns">
+          <button class="time-btn" onclick="selectTime('lt',30,this)">30 s</button>
+          <button class="time-btn" onclick="selectTime('lt',40,this)">40 s</button>
+          <button class="time-btn" onclick="selectTime('lt',50,this)">50 s</button>
+          <button class="time-btn" onclick="selectTime('lt',60,this)">1 min</button>
+          <button class="time-btn" onclick="selectTime('lt',75,this)">1 min 15</button>
+          <button class="time-btn" onclick="selectTime('lt',90,this)">1 min 30</button>
+          <button class="time-btn" onclick="selectTime('lt',120,this)">2 min</button>
+          <button class="time-btn" onclick="selectTime('lt',150,this)">2 min 30</button>
+        </div>
+      </div>
+      <div class="action-btns">
+        <button class="btn-action btn-blue"   onclick="tireLettres('voyelle')">+ Voyelle</button>
+        <button class="btn-action btn-outline" onclick="tireLettres('consonne')">+ Consonne</button>
+        <button class="btn-action btn-start"  id="lt-start-btn" onclick="lancerLettres()" style="display:none;">▶ Lancer !</button>
+      </div>
+    </div>
+    <!-- Étape 2 -->
+    <div id="lt-chrono" class="section">
+      <span class="phase-badge lettres">Étape 2 — À vos cerveaux !</span>
+      <div class="tiles-row" id="lt-tiles-play"></div>
+      <div class="timer-section">
+        <div class="timer-bar-wrap"><div class="timer-bar lettres" id="lt-bar"></div></div>
+      </div>
+    </div>
+    <!-- Étape 3 -->
+    <div id="lt-result" class="section">
+      <span class="phase-badge lettres">Étape 3 — Correction !</span>
+      <div class="tiles-row" id="lt-tiles-result"></div>
+      <div id="lt-solution-box" style="width:90%;max-width:900px;"></div>
+      <div class="action-btns">
+        <button class="btn-action btn-yellow"  onclick="openAnswersLettres()">📝 Réponses des élèves</button>
+        <button class="btn-action btn-yellow"  id="lt-sol-btn" onclick="showSolutionLettres()">💡 Meilleure solution</button>
+        <button class="btn-action btn-start"   onclick="nouvellePartie('lettres')">🔄 Nouvelle manche</button>
+        <button class="btn-action btn-gray"    onclick="backMenu()">← Menu</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================== JEU CHIFFRES ======================== -->
+<div id="screen-chiffres" class="screen">
+  <div class="game-wrap">
+    <div class="game-topbar">
+      <button class="btn-back" onclick="backMenu()">← Menu</button>
+      <span class="game-title chiffres">🔢 Les Chiffres</span>
+    </div>
+    <!-- Étape 1 -->
+    <div id="ch-tirage" class="section visible">
+      <span class="phase-badge chiffres">Étape 1 — Tirage des plaques</span>
+      <div class="tiles-row" id="ch-tiles-draw"></div>
+      <div class="count-label" id="ch-count">0 / 6 plaques tirées</div>
+      <div>
+        <div class="time-choice-label">⏱ Temps de réponse :</div>
+        <div class="time-btns" id="ch-time-btns">
+          <button class="time-btn" onclick="selectTime('ch',30,this)">30 s</button>
+          <button class="time-btn" onclick="selectTime('ch',40,this)">40 s</button>
+          <button class="time-btn" onclick="selectTime('ch',50,this)">50 s</button>
+          <button class="time-btn" onclick="selectTime('ch',60,this)">1 min</button>
+          <button class="time-btn" onclick="selectTime('ch',75,this)">1 min 15</button>
+          <button class="time-btn" onclick="selectTime('ch',90,this)">1 min 30</button>
+          <button class="time-btn" onclick="selectTime('ch',120,this)">2 min</button>
+          <button class="time-btn" onclick="selectTime('ch',150,this)">2 min 30</button>
+        </div>
+      </div>
+      <div class="action-btns">
+        <button class="btn-action btn-amber"    onclick="tirePlaque('grand')">+ Grand nombre</button>
+        <button class="btn-action btn-outline-a" onclick="tirePlaque('petit')">+ Petit nombre</button>
+        <button class="btn-action btn-start"    id="ch-start-btn" onclick="lancerChiffres()" style="display:none;">▶ Lancer !</button>
+      </div>
+      <div class="count-label" style="font-size:clamp(0.75rem,1.1vw,0.95rem);">Grands : 25 · 50 · 75 · 100 &nbsp;|&nbsp; Petits : 1 à 10</div>
+    </div>
+    <!-- Étape 2 -->
+    <div id="ch-chrono" class="section">
+      <span class="phase-badge chiffres">Étape 2 — Calculez !</span>
+      <div class="tiles-row" id="ch-tiles-play"></div>
+      <div class="cible-box">
+        <div class="cible-label">NOMBRE CIBLE</div>
+        <div class="cible-num" id="ch-cible-display">---</div>
+      </div>
+      <div class="timer-section">
+        <div class="timer-bar-wrap"><div class="timer-bar chiffres" id="ch-bar"></div></div>
+      </div>
+    </div>
+    <!-- Étape 3 -->
+    <div id="ch-result" class="section">
+      <span class="phase-badge chiffres">Étape 3 — Correction !</span>
+      <div class="tiles-row" id="ch-tiles-result"></div>
+      <div class="cible-box">
+        <div class="cible-label">NOMBRE CIBLE</div>
+        <div class="cible-num" id="ch-cible-result">---</div>
+      </div>
+      <div id="ch-solution-box" style="width:90%;max-width:900px;"></div>
+      <div class="action-btns">
+        <button class="btn-action btn-yellow"  onclick="openAnswersChiffres()">📝 Réponses des élèves</button>
+        <button class="btn-action btn-yellow"  id="ch-sol-btn" onclick="showSolutionChiffres()">💡 Meilleure solution</button>
+        <button class="btn-action btn-start"   onclick="nouvellePartie('chiffres')">🔄 Nouvelle manche</button>
+        <button class="btn-action btn-gray"    onclick="backMenu()">← Menu</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================== MODALES ======================== -->
+<!-- Modale erreur -->
+<div id="modal-error" class="modal-overlay" style="display:none;" onclick="closeModal()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <span class="modal-icon" id="modal-icon">⚠️</span>
+    <div class="modal-title" id="modal-title">Attention</div>
+    <div class="modal-msg"   id="modal-msg">Message</div>
+    <button class="modal-ok" onclick="closeModal()">OK, j'ai compris</button>
+  </div>
+</div>
+
+<!-- Modale réponses élèves LETTRES -->
+<div id="modal-answers-lt" class="answers-overlay" style="display:none;">
+  <div class="answers-box">
+    <div class="answers-title">📝 Réponses des élèves — Lettres</div>
+    <div class="answers-subtitle" id="lt-ans-letters-display"></div>
+    <div class="answers-input-row">
+      <input class="answers-input" id="lt-ans-input" placeholder="Saisir un mot proposé…" maxlength="9"
+             onkeydown="if(event.key==='Enter')addAnswerLt()">
+      <button class="btn-add-answer" onclick="addAnswerLt()">Ajouter</button>
+    </div>
+    <div class="answers-list" id="lt-ans-list"></div>
+    <div id="lt-ans-sol" style="display:none;"></div>
+    <div class="answers-footer">
+      <button class="btn-show-sol" onclick="showSolInModal('lt')">💡 Voir la meilleure solution</button>
+      <button class="btn-close-answers" onclick="closeAnswersModal('lt')">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale réponses élèves CHIFFRES -->
+<div id="modal-answers-ch" class="answers-overlay" style="display:none;">
+  <div class="answers-box">
+    <div class="answers-title">📝 Réponses des élèves — Chiffres</div>
+    <div class="answers-subtitle" id="ch-ans-cible-display"></div>
+    <div class="answers-input-row">
+      <input class="answers-input chiffres-i" id="ch-ans-input" type="number" placeholder="Saisir un résultat proposé…"
+             onkeydown="if(event.key==='Enter')addAnswerCh()">
+      <button class="btn-add-answer" onclick="addAnswerCh()">Ajouter</button>
+    </div>
+    <div class="answers-list" id="ch-ans-list"></div>
+    <div id="ch-ans-sol" style="display:none;"></div>
+    <div class="answers-footer">
+      <button class="btn-show-sol" onclick="showSolInModal('ch')">💡 Voir la meilleure solution</button>
+      <button class="btn-close-answers" onclick="closeAnswersModal('ch')">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================== SCRIPT ======================== -->
+<script>
+/* ===================================================
+   DONNÉES
+   =================================================== */
+const VOYELLES  = 'AAAAAAAAAEEEEEEEEEEEEEEIIIIIIIIIOOOOOOOUUUUUUY'.split('');
+const CONSONNES = 'BBCCDDFGGHHJKLLLLLMMMNNNNNPPPQRRRRRRSSSSSSTTTTTTTVWXZ'.split('');
+const GRANDS_AVAIL = [25, 50, 75, 100];
+
+// Dictionnaire enrichi — environ 3000 mots courants français
+const DICO = new Set([
+  "ABBAYE","ABBAYES","ABOYA","ABOYAI","ABOYAIENT","ABOYAIS","ABOYAIT","ABOYAMES","ABOYANT","ABOYAS","ABOYATES","ABOYE","ABOYEE","ABOYEES","ABOYENT",
+  "ABOYER","ABOYERA","ABOYERAI","ABOYERAIS","ABOYERAIT","ABOYERAS","ABOYERENT","ABOYEREZ","ABOYERIEZ","ABOYERONS","ABOYERONT","ABOYES","ABOYEZ","ABOYIEZ","ABOYIONS",
+  "ABOYONS","ABRI","ABRIS","ABSENCE","ABSENCES","ABSENT","ABSENTE","ABSENTES","ABSENTS","ACCEDA","ACCEDAI","ACCEDAIS","ACCEDAIT","ACCEDAMES","ACCEDANT",
+  "ACCEDAS","ACCEDATES","ACCEDE","ACCEDEE","ACCEDEES","ACCEDENT","ACCEDER","ACCEDERA","ACCEDERAI","ACCEDERAS","ACCEDEREZ","ACCEDES","ACCEDEZ","ACCEDIEZ","ACCEDIONS",
+  "ACCEDONS","ACCEPTA","ACCEPTAI","ACCEPTAIS","ACCEPTAIT","ACCEPTANT","ACCEPTAS","ACCEPTE","ACCEPTEE","ACCEPTEES","ACCEPTENT","ACCEPTER","ACCEPTERA","ACCEPTES","ACCEPTEZ",
+  "ACCEPTIEZ","ACCEPTONS","ACCORD","ACCORDA","ACCORDAI","ACCORDAIS","ACCORDAIT","ACCORDANT","ACCORDAS","ACCORDE","ACCORDEE","ACCORDEES","ACCORDENT","ACCORDER","ACCORDERA",
+  "ACCORDES","ACCORDEZ","ACCORDIEZ","ACCORDONS","ACCORDS","ACCUEILLI","ACHAT","ACHATS","ACHETA","ACHETAI","ACHETAIS","ACHETAIT","ACHETAMES","ACHETANT","ACHETAS",
+  "ACHETATES","ACHETE","ACHETEE","ACHETEES","ACHETENT","ACHETER","ACHETERA","ACHETERAI","ACHETERAS","ACHETEREZ","ACHETES","ACHETEZ","ACHETIEZ","ACHETIONS","ACHETONS",
+  "ACIER","ACIERS","ACTEUR","ACTEURS","ACTIF","ACTIFS","ACTION","ACTIONS","ACTIVE","ACTIVES","ACTIVITE","ACTIVITES","ADAPTA","ADAPTAI","ADAPTAIS",
+  "ADAPTAIT","ADAPTAMES","ADAPTANT","ADAPTAS","ADAPTATES","ADAPTE","ADAPTEE","ADAPTEES","ADAPTENT","ADAPTER","ADAPTERA","ADAPTERAI","ADAPTERAS","ADAPTEREZ","ADAPTES",
+  "ADAPTEZ","ADAPTIEZ","ADAPTIONS","ADAPTONS","ADMIRA","ADMIRAI","ADMIRAIS","ADMIRAIT","ADMIRAMES","ADMIRANT","ADMIRAS","ADMIRATES","ADMIRE","ADMIREE","ADMIREES",
+  "ADMIRENT","ADMIRER","ADMIRERA","ADMIRERAI","ADMIRERAS","ADMIREREZ","ADMIRES","ADMIREZ","ADMIRIEZ","ADMIRIONS","ADMIRONS","ADORA","ADORABLE","ADORABLES","ADORAI",
+  "ADORAIENT","ADORAIS","ADORAIT","ADORAMES","ADORANT","ADORAS","ADORATES","ADORE","ADOREE","ADOREES","ADORENT","ADORER","ADORERA","ADORERAI","ADORERAIS",
+  "ADORERAIT","ADORERAS","ADORERENT","ADOREREZ","ADORERIEZ","ADORERONS","ADORERONT","ADORES","ADOREZ","ADORIEZ","ADORIONS","ADORONS","ADRESSA","ADRESSAI","ADRESSAIS",
+  "ADRESSAIT","ADRESSANT","ADRESSAS","ADRESSE","ADRESSEE","ADRESSEES","ADRESSENT","ADRESSER","ADRESSERA","ADRESSES","ADRESSEZ","ADRESSIEZ","ADRESSONS","AERIEN","AERIENS",
+  "AFFAIRE","AFFAIRES","AFFICHE","AFFICHES","AFFIRMA","AFFIRMAI","AFFIRMAIS","AFFIRMAIT","AFFIRMANT","AFFIRMAS","AFFIRME","AFFIRMEE","AFFIRMEES","AFFIRMENT","AFFIRMER",
+  "AFFIRMERA","AFFIRMES","AFFIRMEZ","AFFIRMIEZ","AFFIRMONS","AFIN","AGE","AGEE","AGEES","AGENCE","AGENCES","AGENDA","AGENDAS","AGES","AGI",
+  "AGIE","AGIES","AGILE","AGILES","AGIR","AGIRA","AGIRAI","AGIRAS","AGIREZ","AGIRONS","AGIRONT","AGIS","AGISSAIS","AGISSAIT","AGISSANT",
+  "AGISSENT","AGISSEZ","AGISSIEZ","AGISSIONS","AGISSONS","AGIT","AGITA","AGITAI","AGITAIENT","AGITAIS","AGITAIT","AGITAMES","AGITANT","AGITAS","AGITATES",
+  "AGITE","AGITEE","AGITEES","AGITENT","AGITER","AGITERA","AGITERAI","AGITERAIS","AGITERAIT","AGITERAS","AGITERENT","AGITEREZ","AGITERIEZ","AGITERONS","AGITERONT",
+  "AGITES","AGITEZ","AGITIEZ","AGITIONS","AGITONS","AGREABLE","AGREABLES","AIDA","AIDAI","AIDAIENT","AIDAIS","AIDAIT","AIDAMES","AIDANT","AIDAS",
+  "AIDATES","AIDE","AIDEE","AIDEES","AIDENT","AIDER","AIDERA","AIDERAI","AIDERAIS","AIDERAIT","AIDERAS","AIDERENT","AIDEREZ","AIDERIEZ","AIDERIONS",
+  "AIDERONS","AIDERONT","AIDES","AIDEZ","AIDIEZ","AIDIONS","AIDONS","AIGU","AIGUE","AIGUES","AIGUS","AIMA","AIMABLE","AIMABLES","AIMAI",
+  "AIMAIENT","AIMAIS","AIMAIT","AIMAMES","AIMANT","AIMANTS","AIMAS","AIMATES","AIME","AIMEE","AIMEES","AIMENT","AIMER","AIMERA","AIMERAI",
+  "AIMERAIS","AIMERAIT","AIMERAS","AIMERENT","AIMEREZ","AIMERIEZ","AIMERIONS","AIMERONS","AIMERONT","AIMES","AIMEZ","AIMIEZ","AIMIONS","AIMONS","AINSI",
+  "AJOUTA","AJOUTAI","AJOUTAIS","AJOUTAIT","AJOUTAMES","AJOUTANT","AJOUTAS","AJOUTATES","AJOUTE","AJOUTEE","AJOUTEES","AJOUTENT","AJOUTER","AJOUTERA","AJOUTERAI",
+  "AJOUTERAS","AJOUTEREZ","AJOUTES","AJOUTEZ","AJOUTIEZ","AJOUTIONS","AJOUTONS","ALARME","ALARMES","ALERTA","ALERTAI","ALERTAIS","ALERTAIT","ALERTAMES","ALERTANT",
+  "ALERTAS","ALERTATES","ALERTE","ALERTEE","ALERTEES","ALERTENT","ALERTER","ALERTERA","ALERTERAI","ALERTERAS","ALERTEREZ","ALERTES","ALERTEZ","ALERTIEZ","ALERTIONS",
+  "ALERTONS","ALIMENT","ALIMENTS","ALLA","ALLAI","ALLAIENT","ALLAIS","ALLAIT","ALLAMES","ALLANT","ALLAS","ALLATES","ALLE","ALLEE","ALLEES",
+  "ALLENT","ALLER","ALLERA","ALLERAI","ALLERAIS","ALLERAIT","ALLERAS","ALLERENT","ALLEREZ","ALLERIEZ","ALLERIONS","ALLERONS","ALLERONT","ALLES","ALLEZ",
+  "ALLIANCE","ALLIANCES","ALLIEZ","ALLIONS","ALLONS","ALLUMA","ALLUMAI","ALLUMAIS","ALLUMAIT","ALLUMAMES","ALLUMANT","ALLUMAS","ALLUMATES","ALLUME","ALLUMEE",
+  "ALLUMEES","ALLUMENT","ALLUMER","ALLUMERA","ALLUMERAI","ALLUMERAS","ALLUMEREZ","ALLUMES","ALLUMEZ","ALLUMIEZ","ALLUMIONS","ALLUMONS","ALTERE","ALTEREE","ALTEREES",
+  "ALTERES","AMBITIEUX","AMENA","AMENAI","AMENAIENT","AMENAIS","AMENAIT","AMENAMES","AMENANT","AMENAS","AMENATES","AMENE","AMENEE","AMENEES","AMENENT",
+  "AMENER","AMENERA","AMENERAI","AMENERAIS","AMENERAIT","AMENERAS","AMENERENT","AMENEREZ","AMENERIEZ","AMENERONS","AMENERONT","AMENES","AMENEZ","AMENIEZ","AMENIONS",
+  "AMENONS","AMITIE","AMITIES","AMPLIFIA","AMPLIFIAI","AMPLIFIAS","AMPLIFIE","AMPLIFIEE","AMPLIFIER","AMPLIFIES","AMPLIFIEZ","AMUSA","AMUSAI","AMUSAIENT","AMUSAIS",
+  "AMUSAIT","AMUSAMES","AMUSANT","AMUSANTE","AMUSANTES","AMUSANTS","AMUSAS","AMUSATES","AMUSE","AMUSEE","AMUSEES","AMUSENT","AMUSER","AMUSERA","AMUSERAI",
+  "AMUSERAIS","AMUSERAIT","AMUSERAS","AMUSERENT","AMUSEREZ","AMUSERIEZ","AMUSERONS","AMUSERONT","AMUSES","AMUSEZ","AMUSIEZ","AMUSIONS","AMUSONS","ANALYSA","ANALYSAI",
+  "ANALYSAIS","ANALYSAIT","ANALYSANT","ANALYSAS","ANALYSE","ANALYSEE","ANALYSEES","ANALYSENT","ANALYSER","ANALYSERA","ANALYSES","ANALYSEZ","ANALYSIEZ","ANALYSONS","ANCIEN",
+  "ANCIENNE","ANCIENNES","ANCIENS","ANCRE","ANCRES","ANGLE","ANGLES","ANIMA","ANIMAI","ANIMAIENT","ANIMAIS","ANIMAIT","ANIMAL","ANIMAMES","ANIMANT",
+  "ANIMAS","ANIMATES","ANIMAUX","ANIME","ANIMEE","ANIMEES","ANIMENT","ANIMER","ANIMERA","ANIMERAI","ANIMERAIS","ANIMERAIT","ANIMERAS","ANIMERENT","ANIMEREZ",
+  "ANIMERIEZ","ANIMERONS","ANIMERONT","ANIMES","ANIMEZ","ANIMIEZ","ANIMIONS","ANIMONS","ANNONCE","ANNONCES","ANNULA","ANNULAI","ANNULAIS","ANNULAIT","ANNULAMES",
+  "ANNULANT","ANNULAS","ANNULATES","ANNULE","ANNULEE","ANNULEES","ANNULENT","ANNULER","ANNULERA","ANNULERAI","ANNULERAS","ANNULEREZ","ANNULES","ANNULEZ","ANNULIEZ",
+  "ANNULIONS","ANNULONS","ANTENNE","ANTENNES","APPEL","APPELA","APPELAI","APPELAIS","APPELAIT","APPELAMES","APPELANT","APPELAS","APPELATES","APPELE","APPELEE",
+  "APPELEES","APPELENT","APPELER","APPELERA","APPELERAI","APPELERAS","APPELEREZ","APPELES","APPELEZ","APPELIEZ","APPELIONS","APPELONS","APPELS","APPLI","APPLIS",
+  "APPORTA","APPORTAI","APPORTAIS","APPORTAIT","APPORTANT","APPORTAS","APPORTE","APPORTEE","APPORTEES","APPORTENT","APPORTER","APPORTERA","APPORTES","APPORTEZ","APPORTIEZ",
+  "APPORTONS","APPRENDRE","APPROCHA","APPROCHAI","APPROCHAS","APPROCHE","APPROCHEE","APPROCHER","APPROCHES","APPROCHEZ","APPUI","APPUIS","APPUYA","APPUYAI","APPUYAIS",
+  "APPUYAIT","APPUYAMES","APPUYANT","APPUYAS","APPUYATES","APPUYE","APPUYEE","APPUYEES","APPUYENT","APPUYER","APPUYERA","APPUYERAI","APPUYERAS","APPUYEREZ","APPUYES",
+  "APPUYEZ","APPUYIEZ","APPUYIONS","APPUYONS","APRÈS","APTE","APTES","ARBRE","ARBRES","ARC","ARCS","ARDENT","ARDENTE","ARDENTES","ARDENTS",
+  "ARDOISE","ARDOISES","ARENE","ARENES","ARGUMENT","ARGUMENTS","ARMEE","ARMEES","ARMOIRE","ARMOIRES","ARRACHA","ARRACHAI","ARRACHAIS","ARRACHAIT","ARRACHANT",
+  "ARRACHAS","ARRACHE","ARRACHEE","ARRACHEES","ARRACHENT","ARRACHER","ARRACHERA","ARRACHES","ARRACHEZ","ARRACHIEZ","ARRACHONS","ARRETA","ARRETAI","ARRETAIS","ARRETAIT",
+  "ARRETAMES","ARRETANT","ARRETAS","ARRETATES","ARRETE","ARRETEE","ARRETEES","ARRETENT","ARRETER","ARRETERA","ARRETERAI","ARRETERAS","ARRETEREZ","ARRETES","ARRETEZ",
+  "ARRETIEZ","ARRETIONS","ARRETONS","ARRIVA","ARRIVAI","ARRIVAIS","ARRIVAIT","ARRIVAMES","ARRIVANT","ARRIVAS","ARRIVATES","ARRIVE","ARRIVEE","ARRIVEES","ARRIVENT",
+  "ARRIVER","ARRIVERA","ARRIVERAI","ARRIVERAS","ARRIVEREZ","ARRIVES","ARRIVEZ","ARRIVIEZ","ARRIVIONS","ARRIVONS","ASSEMBLA","ASSEMBLAI","ASSEMBLAS","ASSEMBLE","ASSEMBLEE",
+  "ASSEMBLER","ASSEMBLES","ASSEMBLEZ","ASSEZ","ASSOCIA","ASSOCIAI","ASSOCIAIS","ASSOCIAIT","ASSOCIANT","ASSOCIAS","ASSOCIE","ASSOCIEE","ASSOCIEES","ASSOCIENT","ASSOCIER",
+  "ASSOCIERA","ASSOCIES","ASSOCIEZ","ASSOCIIEZ","ASSOCIONS","ASSURA","ASSURAI","ASSURAIS","ASSURAIT","ASSURAMES","ASSURANT","ASSURAS","ASSURATES","ASSURE","ASSUREE",
+  "ASSUREES","ASSURENT","ASSURER","ASSURERA","ASSURERAI","ASSURERAS","ASSUREREZ","ASSURES","ASSUREZ","ASSURIEZ","ASSURIONS","ASSURONS","ASTRE","ASTRES","ATELIER",
+  "ATELIERS","ATOME","ATOMES","ATTAQUA","ATTAQUAI","ATTAQUAIS","ATTAQUAIT","ATTAQUANT","ATTAQUAS","ATTAQUE","ATTAQUEE","ATTAQUEES","ATTAQUENT","ATTAQUER","ATTAQUERA",
+  "ATTAQUES","ATTAQUEZ","ATTAQUIEZ","ATTAQUONS","ATTENDRE","ATTENTIF","ATTENTIFS","ATTENTION","ATTENTIVE","ATTITUDE","ATTITUDES","ATTRAPA","ATTRAPAI","ATTRAPAIS","ATTRAPAIT",
+  "ATTRAPANT","ATTRAPAS","ATTRAPE","ATTRAPEE","ATTRAPEES","ATTRAPENT","ATTRAPER","ATTRAPERA","ATTRAPES","ATTRAPEZ","ATTRAPIEZ","ATTRAPONS","AU","AUBERGE","AUBERGES",
+  "AUGMENTA","AUGMENTAI","AUGMENTAS","AUGMENTE","AUGMENTEE","AUGMENTER","AUGMENTES","AUGMENTEZ","AUJOURD","AUSSI","AUTEUR","AUTEURS","AUTORISA","AUTORISAI","AUTORISAS",
+  "AUTORISE","AUTORISEE","AUTORISER","AUTORISES","AUTORISEZ","AUTORITE","AUTORITES","AUTRE","AUX","AVALA","AVALAI","AVALAIENT","AVALAIS","AVALAIT","AVALAMES",
+  "AVALANT","AVALAS","AVALATES","AVALE","AVALEE","AVALEES","AVALENT","AVALER","AVALERA","AVALERAI","AVALERAIS","AVALERAIT","AVALERAS","AVALERENT","AVALEREZ",
+  "AVALERIEZ","AVALERONS","AVALERONT","AVALES","AVALEZ","AVALIEZ","AVALIONS","AVALONS","AVANCA","AVANCAI","AVANCAIS","AVANCAIT","AVANCAMES","AVANCANT","AVANCAS",
+  "AVANCATES","AVANCE","AVANCEE","AVANCEES","AVANCENT","AVANCER","AVANCERA","AVANCERAI","AVANCERAS","AVANCEREZ","AVANCES","AVANCEZ","AVANCIEZ","AVANCIONS","AVANCONS",
+  "AVANT","AVEC","AVENTURE","AVENTURES","AVENUE","AVENUES","AVION","AVIONS","AVISA","AVISAI","AVISAIENT","AVISAIS","AVISAIT","AVISAMES","AVISANT",
+  "AVISAS","AVISATES","AVISE","AVISEE","AVISEES","AVISENT","AVISER","AVISERA","AVISERAI","AVISERAIS","AVISERAIT","AVISERAS","AVISERENT","AVISEREZ","AVISERIEZ",
+  "AVISERONS","AVISERONT","AVISES","AVISEZ","AVISIEZ","AVISIONS","AVISONS","AVOCATE","AVOCATES","AXE","AXES","BAIGNA","BAIGNAI","BAIGNAIS","BAIGNAIT",
+  "BAIGNAMES","BAIGNANT","BAIGNAS","BAIGNATES","BAIGNE","BAIGNEE","BAIGNEES","BAIGNENT","BAIGNER","BAIGNERA","BAIGNERAI","BAIGNERAS","BAIGNEREZ","BAIGNES","BAIGNEZ",
+  "BAIGNIEZ","BAIGNIONS","BAIGNONS","BAISSA","BAISSAI","BAISSAIS","BAISSAIT","BAISSAMES","BAISSANT","BAISSAS","BAISSATES","BAISSE","BAISSEE","BAISSEES","BAISSENT",
+  "BAISSER","BAISSERA","BAISSERAI","BAISSERAS","BAISSEREZ","BAISSES","BAISSEZ","BAISSIEZ","BAISSIONS","BAISSONS","BALAYA","BALAYAI","BALAYAIS","BALAYAIT","BALAYAMES",
+  "BALAYANT","BALAYAS","BALAYATES","BALAYE","BALAYEE","BALAYEES","BALAYENT","BALAYER","BALAYERA","BALAYERAI","BALAYERAS","BALAYEREZ","BALAYES","BALAYEZ","BALAYIEZ",
+  "BALAYIONS","BALAYONS","BALLE","BALLES","BALLON","BALLONS","BANQUE","BANQUES","BANQUIER","BANQUIERS","BARRAGE","BARRAGES","BARRIERE","BARRIERES","BATAILLE",
+  "BATAILLES","BATEAU","BATEAUX","BATI","BATIE","BATIES","BATIMENT","BATIMENTS","BATIR","BATIRA","BATIRAI","BATIRAS","BATIREZ","BATIRONS","BATIRONT",
+  "BATIS","BATISSAIS","BATISSAIT","BATISSANT","BATISSENT","BATISSEZ","BATISSIEZ","BATISSONS","BATIT","BAZAR","BAZARS","BEAU","BEAUE","BEAUES","BEAUTE",
+  "BEAUTES","BEAUX","BESOIN","BESOINS","BETE","BETES","BIEN","BIENTÔT","BILAN","BILANS","BILLET","BILLETS","BLANC","BLANCHE","BLANCHES",
+  "BLANCS","BLESSA","BLESSAI","BLESSAIS","BLESSAIT","BLESSAMES","BLESSANT","BLESSAS","BLESSATES","BLESSE","BLESSEE","BLESSEES","BLESSENT","BLESSER","BLESSERA",
+  "BLESSERAI","BLESSERAS","BLESSEREZ","BLESSES","BLESSEZ","BLESSIEZ","BLESSIONS","BLESSONS","BLESSURE","BLESSURES","BLEU","BLEUE","BLEUES","BLEUS","BLOC",
+  "BLOCS","BOCAL","BOCAUX","BOEUF","BOEUFS","BOIS","BOITE","BOITES","BOMBE","BOMBES","BON","BONHEUR","BONHEURS","BONNE","BONNES",
+  "BONS","BORD","BORDS","BOUCHER","BOUCHERS","BOUGA","BOUGAI","BOUGAIENT","BOUGAIS","BOUGAIT","BOUGAMES","BOUGANT","BOUGAS","BOUGATES","BOUGE",
+  "BOUGEE","BOUGEES","BOUGENT","BOUGER","BOUGERA","BOUGERAI","BOUGERAIS","BOUGERAIT","BOUGERAS","BOUGERENT","BOUGEREZ","BOUGERIEZ","BOUGERONS","BOUGERONT","BOUGES",
+  "BOUGEZ","BOUGIEZ","BOUGIONS","BOUGONS","BOULANGER","BOUTEILLE","BOUTON","BOUTONS","BRANCHA","BRANCHAI","BRANCHAIS","BRANCHAIT","BRANCHANT","BRANCHAS","BRANCHE",
+  "BRANCHEE","BRANCHEES","BRANCHENT","BRANCHER","BRANCHERA","BRANCHES","BRANCHEZ","BRANCHIEZ","BRANCHONS","BRAS","BREBIS","BREF","BREFE","BREFES","BREFS",
+  "BRILLA","BRILLAI","BRILLAIS","BRILLAIT","BRILLAMES","BRILLANT","BRILLANTE","BRILLANTS","BRILLAS","BRILLATES","BRILLE","BRILLEE","BRILLEES","BRILLENT","BRILLER",
+  "BRILLERA","BRILLERAI","BRILLERAS","BRILLEREZ","BRILLES","BRILLEZ","BRILLIEZ","BRILLIONS","BRILLONS","BRISA","BRISAI","BRISAIENT","BRISAIS","BRISAIT","BRISAMES",
+  "BRISANT","BRISAS","BRISATES","BRISE","BRISEE","BRISEES","BRISENT","BRISER","BRISERA","BRISERAI","BRISERAIS","BRISERAIT","BRISERAS","BRISERENT","BRISEREZ",
+  "BRISERIEZ","BRISERONS","BRISERONT","BRISES","BRISEZ","BRISIEZ","BRISIONS","BRISONS","BROCHURE","BROCHURES","BRULA","BRULAI","BRULAIENT","BRULAIS","BRULAIT",
+  "BRULAMES","BRULANT","BRULAS","BRULATES","BRULE","BRULEE","BRULEES","BRULENT","BRULER","BRULERA","BRULERAI","BRULERAIS","BRULERAIT","BRULERAS","BRULERENT",
+  "BRULEREZ","BRULERIEZ","BRULERONS","BRULERONT","BRULES","BRULEZ","BRULIEZ","BRULIONS","BRULONS","BRUN","BRUNE","BRUNES","BRUNS","BUCHE","BUCHES",
+  "BUREAU","BUREAUX","CACHA","CACHAI","CACHAIENT","CACHAIS","CACHAIT","CACHAMES","CACHANT","CACHAS","CACHATES","CACHE","CACHEE","CACHEES","CACHENT",
+  "CACHER","CACHERA","CACHERAI","CACHERAIS","CACHERAIT","CACHERAS","CACHERENT","CACHEREZ","CACHERIEZ","CACHERONS","CACHERONT","CACHES","CACHEZ","CACHIEZ","CACHIONS",
+  "CACHONS","CADEAU","CADEAUX","CADRE","CADRES","CAFE","CAFES","CAHIER","CAHIERS","CAISSE","CAISSES","CALCUL","CALCULA","CALCULAI","CALCULAIS",
+  "CALCULAIT","CALCULANT","CALCULAS","CALCULE","CALCULEE","CALCULEES","CALCULENT","CALCULER","CALCULERA","CALCULES","CALCULEZ","CALCULIEZ","CALCULONS","CALCULS","CALMA",
+  "CALMAI","CALMAIENT","CALMAIS","CALMAIT","CALMAMES","CALMANT","CALMAS","CALMATES","CALME","CALMEE","CALMEES","CALMENT","CALMER","CALMERA","CALMERAI",
+  "CALMERAIS","CALMERAIT","CALMERAS","CALMERENT","CALMEREZ","CALMERIEZ","CALMERONS","CALMERONT","CALMES","CALMEZ","CALMIEZ","CALMIONS","CALMONS","CAMION","CAMIONS",
+  "CAMPAGNE","CAMPAGNES","CANAL","CANAUX","CAPABLE","CAPABLES","CAPACITE","CAPACITES","CAPITAL","CAPITALE","CAPITALES","CAPITAUX","CAPTURA","CAPTURAI","CAPTURAIS",
+  "CAPTURAIT","CAPTURANT","CAPTURAS","CAPTURE","CAPTUREE","CAPTUREES","CAPTURENT","CAPTURER","CAPTURERA","CAPTURES","CAPTUREZ","CAPTURIEZ","CAPTURONS","CAR","CARNET",
+  "CARNETS","CARTE","CARTES","CARTON","CARTONS","CASQUE","CASQUES","CAUSA","CAUSAI","CAUSAIENT","CAUSAIS","CAUSAIT","CAUSAMES","CAUSANT","CAUSAS",
+  "CAUSATES","CAUSE","CAUSEE","CAUSEES","CAUSENT","CAUSER","CAUSERA","CAUSERAI","CAUSERAIS","CAUSERAIT","CAUSERAS","CAUSERENT","CAUSEREZ","CAUSERIEZ","CAUSERONS",
+  "CAUSERONT","CAUSES","CAUSEZ","CAUSIEZ","CAUSIONS","CAUSONS","CE","CELEBRA","CELEBRAI","CELEBRAIS","CELEBRAIT","CELEBRANT","CELEBRAS","CELEBRE","CELEBREE",
+  "CELEBREES","CELEBRENT","CELEBRER","CELEBRERA","CELEBRES","CELEBREZ","CELEBRIEZ","CELEBRONS","CENTRAL","CENTRALE","CENTRALES","CENTRAUX","CERCLE","CERCLES","CERISE",
+  "CERISES","CERTAIN","CERTAINE","CERTAINES","CERTAINS","CERVEAU","CERVEAUX","CES","CET","CETTE","CHAISE","CHAISES","CHAMP","CHAMPS","CHANCE",
+  "CHANCES","CHANGA","CHANGAI","CHANGAIS","CHANGAIT","CHANGAMES","CHANGANT","CHANGAS","CHANGATES","CHANGE","CHANGEE","CHANGEES","CHANGENT","CHANGER","CHANGERA",
+  "CHANGERAI","CHANGERAS","CHANGEREZ","CHANGES","CHANGEZ","CHANGIEZ","CHANGIONS","CHANGONS","CHANSON","CHANSONS","CHANTA","CHANTAI","CHANTAIS","CHANTAIT","CHANTAMES",
+  "CHANTANT","CHANTAS","CHANTATES","CHANTE","CHANTEE","CHANTEES","CHANTENT","CHANTER","CHANTERA","CHANTERAI","CHANTERAS","CHANTEREZ","CHANTES","CHANTEUR","CHANTEURS",
+  "CHANTEZ","CHANTIEZ","CHANTIONS","CHANTONS","CHAPEAU","CHAPEAUX","CHAQUE","CHARGE","CHARGES","CHAT","CHATEAU","CHATEAUX","CHATS","CHAUD","CHAUDE",
+  "CHAUDES","CHAUDS","CHAUFFA","CHAUFFAI","CHAUFFAIS","CHAUFFAIT","CHAUFFANT","CHAUFFAS","CHAUFFE","CHAUFFEE","CHAUFFEES","CHAUFFENT","CHAUFFER","CHAUFFERA","CHAUFFES",
+  "CHAUFFEZ","CHAUFFIEZ","CHAUFFONS","CHEMIN","CHEMINS","CHEMISE","CHEMISES","CHENILLE","CHENILLES","CHERCHA","CHERCHAI","CHERCHAIS","CHERCHAIT","CHERCHANT","CHERCHAS",
+  "CHERCHE","CHERCHEE","CHERCHEES","CHERCHENT","CHERCHER","CHERCHERA","CHERCHES","CHERCHEZ","CHERCHIEZ","CHERCHONS","CHEVAL","CHEVAUX","CHIEN","CHIENS","CHIFFRA",
+  "CHIFFRAI","CHIFFRAIS","CHIFFRAIT","CHIFFRANT","CHIFFRAS","CHIFFRE","CHIFFREE","CHIFFREES","CHIFFRENT","CHIFFRER","CHIFFRERA","CHIFFRES","CHIFFREZ","CHIFFRIEZ","CHIFFRONS",
+  "CHOISI","CHOISIE","CHOISIES","CHOISIR","CHOISIRA","CHOISIRAI","CHOISIRAS","CHOISIREZ","CHOISIS","CHOISIT","CHOSE","CHOSES","CIEL","CIELS","CIMENT",
+  "CIMENTS","CINEMA","CINEMAS","CIRCUIT","CIRCUITS","CIRCULA","CIRCULAI","CIRCULAIS","CIRCULAIT","CIRCULANT","CIRCULAS","CIRCULE","CIRCULEE","CIRCULEES","CIRCULENT",
+  "CIRCULER","CIRCULERA","CIRCULES","CIRCULEZ","CIRCULIEZ","CIRCULONS","CIRQUE","CIRQUES","CITOYEN","CITOYENS","CLAIR","CLAIRE","CLAIRES","CLAIRS","CLARTE",
+  "CLARTES","CLASSA","CLASSAI","CLASSAIS","CLASSAIT","CLASSAMES","CLASSANT","CLASSAS","CLASSATES","CLASSE","CLASSEE","CLASSEES","CLASSENT","CLASSER","CLASSERA",
+  "CLASSERAI","CLASSERAS","CLASSEREZ","CLASSES","CLASSEZ","CLASSIEZ","CLASSIONS","CLASSONS","CLAVIER","CLAVIERS","CLE","CLES","CLIGNA","CLIGNAI","CLIGNAIS",
+  "CLIGNAIT","CLIGNAMES","CLIGNANT","CLIGNAS","CLIGNATES","CLIGNE","CLIGNEE","CLIGNEES","CLIGNENT","CLIGNER","CLIGNERA","CLIGNERAI","CLIGNERAS","CLIGNEREZ","CLIGNES",
+  "CLIGNEZ","CLIGNIEZ","CLIGNIONS","CLIGNONS","CLOCHE","CLOCHES","CLOTURE","CLOTURES","CLOU","CLOUS","CODE","CODES","COEUR","COEURS","COIFFA",
+  "COIFFAI","COIFFAIS","COIFFAIT","COIFFAMES","COIFFANT","COIFFAS","COIFFATES","COIFFE","COIFFEE","COIFFEES","COIFFENT","COIFFER","COIFFERA","COIFFERAI","COIFFERAS",
+  "COIFFEREZ","COIFFES","COIFFEZ","COIFFIEZ","COIFFIONS","COIFFONS","COIN","COINS","COLERE","COLERES","COLLA","COLLAI","COLLAIENT","COLLAIS","COLLAIT",
+  "COLLAMES","COLLANT","COLLAS","COLLATES","COLLE","COLLECTIF","COLLEE","COLLEES","COLLENT","COLLER","COLLERA","COLLERAI","COLLERAIS","COLLERAIT","COLLERAS",
+  "COLLERENT","COLLEREZ","COLLERIEZ","COLLERONS","COLLERONT","COLLES","COLLEZ","COLLIEZ","COLLIONS","COLLONS","COLONNE","COLONNES","COLORIA","COLORIAI","COLORIAIS",
+  "COLORIAIT","COLORIANT","COLORIAS","COLORIE","COLORIEE","COLORIEES","COLORIENT","COLORIER","COLORIERA","COLORIES","COLORIEZ","COLORIIEZ","COLORIONS","COMBAT","COMBATS",
+  "COMEDIE","COMEDIES","COMITE","COMITES","COMMANDA","COMMANDAI","COMMANDAS","COMMANDE","COMMANDEE","COMMANDER","COMMANDES","COMMANDEZ","COMME","COMMENCA","COMMENCAI",
+  "COMMENCAS","COMMENCE","COMMENCEE","COMMENCER","COMMENCES","COMMENCEZ","COMMENT","COMPAGNIE","COMPARA","COMPARAI","COMPARAIS","COMPARAIT","COMPARANT","COMPARAS","COMPARE",
+  "COMPAREE","COMPAREES","COMPARENT","COMPARER","COMPARERA","COMPARES","COMPAREZ","COMPARIEZ","COMPARONS","COMPAS","COMPLET","COMPLETS","COMPLETTE","COMPOSA","COMPOSAI",
+  "COMPOSAIS","COMPOSAIT","COMPOSANT","COMPOSAS","COMPOSE","COMPOSEE","COMPOSEES","COMPOSENT","COMPOSER","COMPOSERA","COMPOSES","COMPOSEZ","COMPOSIEZ","COMPOSONS","COMPTA",
+  "COMPTAI","COMPTAIS","COMPTAIT","COMPTAMES","COMPTANT","COMPTAS","COMPTATES","COMPTE","COMPTEE","COMPTEES","COMPTENT","COMPTER","COMPTERA","COMPTERAI","COMPTERAS",
+  "COMPTEREZ","COMPTES","COMPTEZ","COMPTIEZ","COMPTIONS","COMPTONS","CONCOURS","CONFIANCE","CONFIANT","CONFIANTE","CONFIANTS","CONFLIT","CONFLITS","CONFORT","CONFORTS",
+  "CONGRES","CONSEIL","CONSEILS","CONSOLA","CONSOLAI","CONSOLAIS","CONSOLAIT","CONSOLANT","CONSOLAS","CONSOLE","CONSOLEE","CONSOLEES","CONSOLENT","CONSOLER","CONSOLERA",
+  "CONSOLES","CONSOLEZ","CONSOLIEZ","CONSOLONS","CONSULTA","CONSULTAI","CONSULTAS","CONSULTE","CONSULTEE","CONSULTER","CONSULTES","CONSULTEZ","CONTACTA","CONTACTAI","CONTACTAS",
+  "CONTACTE","CONTACTEE","CONTACTER","CONTACTES","CONTACTEZ","CONTENT","CONTENTE","CONTENTES","CONTENTS","CONTENU","CONTENUS","CONTRE","CONTROLE","CONTROLES","COPAIN",
+  "COPAINS","COPINE","COPINES","COQUILLE","COQUILLES","CORDE","CORDES","CORRIGA","CORRIGAI","CORRIGAIS","CORRIGAIT","CORRIGANT","CORRIGAS","CORRIGE","CORRIGEE",
+  "CORRIGEES","CORRIGENT","CORRIGER","CORRIGERA","CORRIGES","CORRIGEZ","CORRIGIEZ","CORRIGONS","COUCHE","COUCHES","COUDRE","COULOIR","COULOIRS","COUPA","COUPAI",
+  "COUPAIENT","COUPAIS","COUPAIT","COUPAMES","COUPANT","COUPAS","COUPATES","COUPE","COUPEE","COUPEES","COUPENT","COUPER","COUPERA","COUPERAI","COUPERAIS",
+  "COUPERAIT","COUPERAS","COUPERENT","COUPEREZ","COUPERIEZ","COUPERONS","COUPERONT","COUPES","COUPEZ","COUPIEZ","COUPIONS","COUPONS","COURAGEUX","COURT","COURTE",
+  "COURTES","COURTS","COUT","COUTS","COUTURE","COUTURES","COUVERCLE","COUVRI","COUVRIE","COUVRIES","COUVRIR","COUVRIRA","COUVRIRAI","COUVRIRAS","COUVRIREZ",
+  "COUVRIS","COUVRIT","CRAYON","CRAYONS","CREA","CREAI","CREAIENT","CREAIS","CREAIT","CREAMES","CREANT","CREAS","CREATES","CREATIF","CREATIFS",
+  "CREATIVE","CREATIVES","CREE","CREEE","CREEES","CREENT","CREER","CREERA","CREERAI","CREERAIS","CREERAIT","CREERAS","CREERENT","CREEREZ","CREERIEZ",
+  "CREERIONS","CREERONS","CREERONT","CREES","CREEZ","CREIEZ","CREIONS","CREONS","CRIME","CRIMES","CRISE","CRISES","CRISTAL","CRISTAUX","CRITIQUE",
+  "CRITIQUES","CUBE","CUBES","CUEILLI","CUEILLIE","CUEILLIES","CUEILLIR","CUEILLIRA","CUEILLIS","CUEILLIT","CUISINE","CUISINES","CUIVRE","CUIVRES","CULTIVA",
+  "CULTIVAI","CULTIVAIS","CULTIVAIT","CULTIVANT","CULTIVAS","CULTIVE","CULTIVEE","CULTIVEES","CULTIVENT","CULTIVER","CULTIVERA","CULTIVES","CULTIVEZ","CULTIVIEZ","CULTIVONS",
+  "CULTURE","CULTURES","CURIEUSE","CURIEUSES","CURIEUX","DAME","DAMES","DANGER","DANGEREUX","DANGERS","DANS","DANSA","DANSAI","DANSAIENT","DANSAIS",
+  "DANSAIT","DANSAMES","DANSANT","DANSAS","DANSATES","DANSE","DANSEE","DANSEES","DANSENT","DANSER","DANSERA","DANSERAI","DANSERAIS","DANSERAIT","DANSERAS",
+  "DANSERENT","DANSEREZ","DANSERIEZ","DANSERONS","DANSERONT","DANSES","DANSEUR","DANSEURS","DANSEZ","DANSIEZ","DANSIONS","DANSONS","DAUPHIN","DAUPHINS","DE",
+  "DEBUT","DEBUTA","DEBUTAI","DEBUTAIS","DEBUTAIT","DEBUTAMES","DEBUTANT","DEBUTAS","DEBUTATES","DEBUTE","DEBUTEE","DEBUTEES","DEBUTENT","DEBUTER","DEBUTERA",
+  "DEBUTERAI","DEBUTERAS","DEBUTEREZ","DEBUTES","DEBUTEZ","DEBUTIEZ","DEBUTIONS","DEBUTONS","DEBUTS","DECHET","DECHETS","DECHIRA","DECHIRAI","DECHIRAIS","DECHIRAIT",
+  "DECHIRANT","DECHIRAS","DECHIRE","DECHIREE","DECHIREES","DECHIRENT","DECHIRER","DECHIRERA","DECHIRES","DECHIREZ","DECHIRIEZ","DECHIRONS","DECIDA","DECIDAI","DECIDAIS",
+  "DECIDAIT","DECIDAMES","DECIDANT","DECIDAS","DECIDATES","DECIDE","DECIDEE","DECIDEES","DECIDENT","DECIDER","DECIDERA","DECIDERAI","DECIDERAS","DECIDEREZ","DECIDES",
+  "DECIDEZ","DECIDIEZ","DECIDIONS","DECIDONS","DECISION","DECISIONS","DECOLLA","DECOLLAI","DECOLLAIS","DECOLLAIT","DECOLLANT","DECOLLAS","DECOLLE","DECOLLEE","DECOLLEES",
+  "DECOLLENT","DECOLLER","DECOLLERA","DECOLLES","DECOLLEZ","DECOLLIEZ","DECOLLONS","DECORA","DECORAI","DECORAIS","DECORAIT","DECORAMES","DECORANT","DECORAS","DECORATES",
+  "DECORE","DECOREE","DECOREES","DECORENT","DECORER","DECORERA","DECORERAI","DECORERAS","DECOREREZ","DECORES","DECOREZ","DECORIEZ","DECORIONS","DECORONS","DECOUPA",
+  "DECOUPAI","DECOUPAIS","DECOUPAIT","DECOUPANT","DECOUPAS","DECOUPE","DECOUPEE","DECOUPEES","DECOUPENT","DECOUPER","DECOUPERA","DECOUPES","DECOUPEZ","DECOUPIEZ","DECOUPONS",
+  "DECOUVRI","DECOUVRIE","DECOUVRIR","DECOUVRIS","DECOUVRIT","DECRIRE","DEFAIRE","DEFENDRE","DEFI","DEFIS","DEGAGA","DEGAGAI","DEGAGAIS","DEGAGAIT","DEGAGAMES",
+  "DEGAGANT","DEGAGAS","DEGAGATES","DEGAGE","DEGAGEE","DEGAGEES","DEGAGENT","DEGAGER","DEGAGERA","DEGAGERAI","DEGAGERAS","DEGAGEREZ","DEGAGES","DEGAGEZ","DEGAGIEZ",
+  "DEGAGIONS","DEGAGONS","DEGAT","DEGATS","DEJEUNA","DEJEUNAI","DEJEUNAIS","DEJEUNAIT","DEJEUNANT","DEJEUNAS","DEJEUNE","DEJEUNEE","DEJEUNEES","DEJEUNENT","DEJEUNER",
+  "DEJEUNERA","DEJEUNES","DEJEUNEZ","DEJEUNIEZ","DEJEUNONS","DELAI","DELAIS","DELICAT","DELICATE","DELICATES","DELICATS","DEMAIN","DEMANDA","DEMANDAI","DEMANDAIS",
+  "DEMANDAIT","DEMANDANT","DEMANDAS","DEMANDE","DEMANDEE","DEMANDEES","DEMANDENT","DEMANDER","DEMANDERA","DEMANDES","DEMANDEZ","DEMANDIEZ","DEMANDONS","DEMARCHE","DEMARCHES",
+  "DENSITE","DENSITES","DEPART","DEPARTS","DEPENSA","DEPENSAI","DEPENSAIS","DEPENSAIT","DEPENSANT","DEPENSAS","DEPENSE","DEPENSEE","DEPENSEES","DEPENSENT","DEPENSER",
+  "DEPENSERA","DEPENSES","DEPENSEZ","DEPENSIEZ","DEPENSONS","DEPLACA","DEPLACAI","DEPLACAIS","DEPLACAIT","DEPLACANT","DEPLACAS","DEPLACE","DEPLACEE","DEPLACEES","DEPLACENT",
+  "DEPLACER","DEPLACERA","DEPLACES","DEPLACEZ","DEPLACIEZ","DEPLACONS","DEPUIS","DERANGA","DERANGAI","DERANGAIS","DERANGAIT","DERANGANT","DERANGAS","DERANGE","DERANGEE",
+  "DERANGEES","DERANGENT","DERANGER","DERANGERA","DERANGES","DERANGEZ","DERANGIEZ","DERANGONS","DES","DESCENDRE","DESERT","DESERTS","DESIGNA","DESIGNAI","DESIGNAIS",
+  "DESIGNAIT","DESIGNANT","DESIGNAS","DESIGNE","DESIGNEE","DESIGNEES","DESIGNENT","DESIGNER","DESIGNERA","DESIGNES","DESIGNEZ","DESIGNIEZ","DESIGNONS","DESSIN","DESSINA",
+  "DESSINAI","DESSINAIS","DESSINAIT","DESSINANT","DESSINAS","DESSINE","DESSINEE","DESSINEES","DESSINENT","DESSINER","DESSINERA","DESSINES","DESSINEZ","DESSINIEZ","DESSINONS",
+  "DESSINS","DETACHA","DETACHAI","DETACHAIS","DETACHAIT","DETACHANT","DETACHAS","DETACHE","DETACHEE","DETACHEES","DETACHENT","DETACHER","DETACHERA","DETACHES","DETACHEZ",
+  "DETACHIEZ","DETACHONS","DETAIL","DETAILS","DETRUIRE","DEVELOPPA","DEVELOPPE","DEVENIR","DEVOIR","DEVOIRS","DIALOGUE","DIALOGUES","DIFFICILE","DIMENSION","DIRE",
+  "DIRECT","DIRECTE","DIRECTES","DIRECTS","DISCRET","DISCRETS","DISCRETTE","DISQUE","DISQUES","DISTINGUA","DISTINGUE","DISTRICT","DISTRICTS","DIVERSITE","DIVISA",
+  "DIVISAI","DIVISAIS","DIVISAIT","DIVISAMES","DIVISANT","DIVISAS","DIVISATES","DIVISE","DIVISEE","DIVISEES","DIVISENT","DIVISER","DIVISERA","DIVISERAI","DIVISERAS",
+  "DIVISEREZ","DIVISES","DIVISEZ","DIVISIEZ","DIVISION","DIVISIONS","DIVISONS","DOCTEUR","DOCTEURS","DOCUMENT","DOCUMENTS","DOIGT","DOIGTS","DOMAINE","DOMAINES",
+  "DOMINA","DOMINAI","DOMINAIS","DOMINAIT","DOMINAMES","DOMINANT","DOMINAS","DOMINATES","DOMINE","DOMINEE","DOMINEES","DOMINENT","DOMINER","DOMINERA","DOMINERAI",
+  "DOMINERAS","DOMINEREZ","DOMINES","DOMINEZ","DOMINIEZ","DOMINIONS","DOMINONS","DONC","DONNA","DONNAI","DONNAIENT","DONNAIS","DONNAIT","DONNAMES","DONNANT",
+  "DONNAS","DONNATES","DONNE","DONNEE","DONNEES","DONNENT","DONNER","DONNERA","DONNERAI","DONNERAIS","DONNERAIT","DONNERAS","DONNERENT","DONNEREZ","DONNERIEZ",
+  "DONNERONS","DONNERONT","DONNES","DONNEZ","DONNIEZ","DONNIONS","DONNONS","DONT","DORMI","DORMIE","DORMIES","DORMIR","DORMIRA","DORMIRAI","DORMIRAS",
+  "DORMIREZ","DORMIRONS","DORMIRONT","DORMIS","DORMISSEZ","DORMIT","DOSSIER","DOSSIERS","DOUCEUR","DOUCEURS","DOUTE","DOUTES","DOUX","DOUXE","DOUXES",
+  "DRAGON","DRAGONS","DROIT","DROITS","DU","DUR","DURA","DURABLE","DURABLES","DURAI","DURAIENT","DURAIS","DURAIT","DURAMES","DURANT",
+  "DURAS","DURATES","DURE","DUREE","DUREES","DURENT","DURER","DURERA","DURERAI","DURERAIS","DURERAIT","DURERAS","DURERENT","DUREREZ","DURERIEZ",
+  "DURERIONS","DURERONS","DURERONT","DURES","DUREZ","DURIEZ","DURIONS","DURONS","DURS","DYNAMIQUE","DÉJÀ","EAU","EAUX","ECHANGE","ECHANGES",
+  "ECLAIRAGE","ECLATA","ECLATAI","ECLATAIS","ECLATAIT","ECLATAMES","ECLATANT","ECLATAS","ECLATATES","ECLATE","ECLATEE","ECLATEES","ECLATENT","ECLATER","ECLATERA",
+  "ECLATERAI","ECLATERAS","ECLATEREZ","ECLATES","ECLATEZ","ECLATIEZ","ECLATIONS","ECLATONS","ECOLE","ECOLES","ECONOMIE","ECONOMIES","ECOUTA","ECOUTAI","ECOUTAIS",
+  "ECOUTAIT","ECOUTAMES","ECOUTANT","ECOUTAS","ECOUTATES","ECOUTE","ECOUTEE","ECOUTEES","ECOUTENT","ECOUTER","ECOUTERA","ECOUTERAI","ECOUTERAS","ECOUTEREZ","ECOUTES",
+  "ECOUTEZ","ECOUTIEZ","ECOUTIONS","ECOUTONS","ECRAN","ECRANS","ECRIRE","EFFACA","EFFACAI","EFFACAIS","EFFACAIT","EFFACAMES","EFFACANT","EFFACAS","EFFACATES",
+  "EFFACE","EFFACEE","EFFACEES","EFFACENT","EFFACER","EFFACERA","EFFACERAI","EFFACERAS","EFFACEREZ","EFFACES","EFFACEZ","EFFACIEZ","EFFACIONS","EFFACONS","EFFET",
+  "EFFETS","EFFICACE","EFFICACES","EGOUT","EGOUTS","ELABORE","ELABOREE","ELABOREES","ELABORES","ELANCE","ELANCEE","ELANCEES","ELANCES","ELARGI","ELARGIE",
+  "ELARGIES","ELARGIR","ELARGIRA","ELARGIRAI","ELARGIRAS","ELARGIREZ","ELARGIS","ELARGIT","ELEGANT","ELEGANTE","ELEGANTES","ELEGANTS","ELEVA","ELEVAI","ELEVAIENT",
+  "ELEVAIS","ELEVAIT","ELEVAMES","ELEVANT","ELEVAS","ELEVATES","ELEVE","ELEVEE","ELEVEES","ELEVENT","ELEVER","ELEVERA","ELEVERAI","ELEVERAIS","ELEVERAIT",
+  "ELEVERAS","ELEVERENT","ELEVEREZ","ELEVERIEZ","ELEVERONS","ELEVERONT","ELEVES","ELEVEZ","ELEVIEZ","ELEVIONS","ELEVONS","ELLES","EMBRASSA","EMBRASSAI","EMBRASSAS",
+  "EMBRASSE","EMBRASSEE","EMBRASSER","EMBRASSES","EMBRASSEZ","EMOTION","EMOTIONS","EMPECHA","EMPECHAI","EMPECHAIS","EMPECHAIT","EMPECHANT","EMPECHAS","EMPECHE","EMPECHEE",
+  "EMPECHEES","EMPECHENT","EMPECHER","EMPECHERA","EMPECHES","EMPECHEZ","EMPECHIEZ","EMPECHONS","EMPLOI","EMPLOIS","EMPORTA","EMPORTAI","EMPORTAIS","EMPORTAIT","EMPORTANT",
+  "EMPORTAS","EMPORTE","EMPORTEE","EMPORTEES","EMPORTENT","EMPORTER","EMPORTERA","EMPORTES","EMPORTEZ","EMPORTIEZ","EMPORTONS","ENCORE","ENDROIT","ENDROITS","ENFANT",
+  "ENFANTS","ENFIN","ENFONCA","ENFONCAI","ENFONCAIS","ENFONCAIT","ENFONCANT","ENFONCAS","ENFONCE","ENFONCEE","ENFONCEES","ENFONCENT","ENFONCER","ENFONCERA","ENFONCES",
+  "ENFONCEZ","ENFONCIEZ","ENFONCONS","ENGAGA","ENGAGAI","ENGAGAIS","ENGAGAIT","ENGAGAMES","ENGAGANT","ENGAGAS","ENGAGATES","ENGAGE","ENGAGEE","ENGAGEES","ENGAGENT",
+  "ENGAGER","ENGAGERA","ENGAGERAI","ENGAGERAS","ENGAGEREZ","ENGAGES","ENGAGEZ","ENGAGIEZ","ENGAGIONS","ENGAGONS","ENLEVA","ENLEVAI","ENLEVAIS","ENLEVAIT","ENLEVAMES",
+  "ENLEVANT","ENLEVAS","ENLEVATES","ENLEVE","ENLEVEE","ENLEVEES","ENLEVENT","ENLEVER","ENLEVERA","ENLEVERAI","ENLEVERAS","ENLEVEREZ","ENLEVES","ENLEVEZ","ENLEVIEZ",
+  "ENLEVIONS","ENLEVONS","ENORME","ENORMES","ENQUETE","ENQUETES","ENSEIGNA","ENSEIGNAI","ENSEIGNAS","ENSEIGNE","ENSEIGNEE","ENSEIGNER","ENSEIGNES","ENSEIGNEZ","ENSEMBLE",
+  "ENSEMBLES","ENSUITE","ENTENDRE","ENTIER","ENTIERE","ENTIERES","ENTIERS","ENTOURA","ENTOURAI","ENTOURAIS","ENTOURAIT","ENTOURANT","ENTOURAS","ENTOURE","ENTOUREE",
+  "ENTOUREES","ENTOURENT","ENTOURER","ENTOURERA","ENTOURES","ENTOUREZ","ENTOURIEZ","ENTOURONS","ENTRA","ENTRAI","ENTRAIENT","ENTRAIS","ENTRAIT","ENTRAMES","ENTRANT",
+  "ENTRAS","ENTRATES","ENTRE","ENTREE","ENTREES","ENTRENT","ENTRER","ENTRERA","ENTRERAI","ENTRERAIS","ENTRERAIT","ENTRERAS","ENTRERENT","ENTREREZ","ENTRERIEZ",
+  "ENTRERONS","ENTRERONT","ENTRES","ENTRETIEN","ENTREZ","ENTRIEZ","ENTRIONS","ENTRONS","ENVIRON","ENVOI","ENVOIS","ENVOYA","ENVOYAI","ENVOYAIS","ENVOYAIT",
+  "ENVOYAMES","ENVOYANT","ENVOYAS","ENVOYATES","ENVOYE","ENVOYEE","ENVOYEES","ENVOYENT","ENVOYER","ENVOYERA","ENVOYERAI","ENVOYERAS","ENVOYEREZ","ENVOYES","ENVOYEZ",
+  "ENVOYIEZ","ENVOYIONS","ENVOYONS","EPAIS","EPAISE","EPAISES","EPAULE","EPAULES","EPLUCHA","EPLUCHAI","EPLUCHAIS","EPLUCHAIT","EPLUCHANT","EPLUCHAS","EPLUCHE",
+  "EPLUCHEE","EPLUCHEES","EPLUCHENT","EPLUCHER","EPLUCHERA","EPLUCHES","EPLUCHEZ","EPLUCHIEZ","EPLUCHONS","EPOQUE","EPOQUES","EQUILIBRE","EQUIPA","EQUIPAI","EQUIPAIS",
+  "EQUIPAIT","EQUIPAMES","EQUIPANT","EQUIPAS","EQUIPATES","EQUIPE","EQUIPEE","EQUIPEES","EQUIPENT","EQUIPER","EQUIPERA","EQUIPERAI","EQUIPERAS","EQUIPEREZ","EQUIPES",
+  "EQUIPEZ","EQUIPIEZ","EQUIPIONS","EQUIPONS","EQUITABLE","ERREUR","ERREURS","ESCALADE","ESCALADES","ESCALIER","ESCALIERS","ESPACE","ESPACES","ESPERA","ESPERAI",
+  "ESPERAIS","ESPERAIT","ESPERAMES","ESPERANT","ESPERAS","ESPERATES","ESPERE","ESPEREE","ESPEREES","ESPERENT","ESPERER","ESPERERA","ESPERERAI","ESPERERAS","ESPEREREZ",
+  "ESPERES","ESPEREZ","ESPERIEZ","ESPERIONS","ESPERONS","ESPOIR","ESPOIRS","ESPRIT","ESPRITS","ESSAYA","ESSAYAI","ESSAYAIS","ESSAYAIT","ESSAYAMES","ESSAYANT",
+  "ESSAYAS","ESSAYATES","ESSAYE","ESSAYEE","ESSAYEES","ESSAYENT","ESSAYER","ESSAYERA","ESSAYERAI","ESSAYERAS","ESSAYEREZ","ESSAYES","ESSAYEZ","ESSAYIEZ","ESSAYIONS",
+  "ESSAYONS","ET","ETABLI","ETABLIE","ETABLIES","ETABLIR","ETABLIRA","ETABLIRAI","ETABLIRAS","ETABLIREZ","ETABLIS","ETABLIT","ETAGE","ETAGES","ETANG",
+  "ETANGS","ETAT","ETATS","ETE","ETENDUE","ETENDUES","ETES","ETOILE","ETOILES","ETRANGE","ETRANGES","ETRE","ETRES","ETUDE","ETUDES",
+  "ETUDIA","ETUDIAI","ETUDIAIS","ETUDIAIT","ETUDIAMES","ETUDIANT","ETUDIAS","ETUDIATES","ETUDIE","ETUDIEE","ETUDIEES","ETUDIENT","ETUDIER","ETUDIERA","ETUDIERAI",
+  "ETUDIERAS","ETUDIEREZ","ETUDIES","ETUDIEZ","ETUDIIEZ","ETUDIIONS","ETUDIONS","EVALUA","EVALUAI","EVALUAIS","EVALUAIT","EVALUAMES","EVALUANT","EVALUAS","EVALUATES",
+  "EVALUE","EVALUEE","EVALUEES","EVALUENT","EVALUER","EVALUERA","EVALUERAI","EVALUERAS","EVALUEREZ","EVALUES","EVALUEZ","EVALUIEZ","EVALUIONS","EVALUONS","EVENEMENT",
+  "EVIDENT","EVIDENTE","EVIDENTES","EVIDENTS","EVITA","EVITAI","EVITAIENT","EVITAIS","EVITAIT","EVITAMES","EVITANT","EVITAS","EVITATES","EVITE","EVITEE",
+  "EVITEES","EVITENT","EVITER","EVITERA","EVITERAI","EVITERAIS","EVITERAIT","EVITERAS","EVITERENT","EVITEREZ","EVITERIEZ","EVITERONS","EVITERONT","EVITES","EVITEZ",
+  "EVITIEZ","EVITIONS","EVITONS","EXAMEN","EXAMENS","EXAMINA","EXAMINAI","EXAMINAIS","EXAMINAIT","EXAMINANT","EXAMINAS","EXAMINE","EXAMINEE","EXAMINEES","EXAMINENT",
+  "EXAMINER","EXAMINERA","EXAMINES","EXAMINEZ","EXAMINIEZ","EXAMINONS","EXECUTA","EXECUTAI","EXECUTAIS","EXECUTAIT","EXECUTANT","EXECUTAS","EXECUTE","EXECUTEE","EXECUTEES",
+  "EXECUTENT","EXECUTER","EXECUTERA","EXECUTES","EXECUTEZ","EXECUTIEZ","EXECUTONS","EXEMPLE","EXEMPLES","EXPLIQUA","EXPLIQUAI","EXPLIQUAS","EXPLIQUE","EXPLIQUEE","EXPLIQUER",
+  "EXPLIQUES","EXPLIQUEZ","EXPLOIT","EXPLOITS","EXPOSA","EXPOSAI","EXPOSAIS","EXPOSAIT","EXPOSAMES","EXPOSANT","EXPOSAS","EXPOSATES","EXPOSE","EXPOSEE","EXPOSEES",
+  "EXPOSENT","EXPOSER","EXPOSERA","EXPOSERAI","EXPOSERAS","EXPOSEREZ","EXPOSES","EXPOSEZ","EXPOSIEZ","EXPOSIONS","EXPOSONS","EXPRIMA","EXPRIMAI","EXPRIMAIS","EXPRIMAIT",
+  "EXPRIMANT","EXPRIMAS","EXPRIME","EXPRIMEE","EXPRIMEES","EXPRIMENT","EXPRIMER","EXPRIMERA","EXPRIMES","EXPRIMEZ","EXPRIMIEZ","EXPRIMONS","EXTRAIT","EXTRAITS","FABLE",
+  "FABLES","FABRIQUA","FABRIQUAI","FABRIQUAS","FABRIQUE","FABRIQUEE","FABRIQUER","FABRIQUES","FABRIQUEZ","FACETTE","FACETTES","FACILE","FACILES","FACILITA","FACILITAI",
+  "FACILITAS","FACILITE","FACILITEE","FACILITER","FACILITES","FACILITEZ","FACTEUR","FACTEURS","FAIBLE","FAIBLES","FAIRE","FALAISE","FALAISES","FAMILIER","FAMILIERE",
+  "FAMILIERS","FAMILLE","FAMILLES","FARINE","FARINES","FELICITA","FELICITAI","FELICITAS","FELICITE","FELICITEE","FELICITER","FELICITES","FELICITEZ","FERMA","FERMAI",
+  "FERMAIENT","FERMAIS","FERMAIT","FERMAMES","FERMANT","FERMAS","FERMATES","FERME","FERMEE","FERMEES","FERMENT","FERMER","FERMERA","FERMERAI","FERMERAIS",
+  "FERMERAIT","FERMERAS","FERMERENT","FERMEREZ","FERMERIEZ","FERMERONS","FERMERONT","FERMES","FERMEZ","FERMIEZ","FERMIONS","FERMONS","FEUILLE","FEUILLES","FIER",
+  "FIERE","FIERES","FIERS","FIERTE","FIERTES","FIGURE","FIGURES","FILET","FILETS","FILM","FILMS","FIN","FINANCIER","FINE","FINES",
+  "FINI","FINIE","FINIES","FINIR","FINIRA","FINIRAI","FINIRAS","FINIREZ","FINIRONS","FINIRONT","FINIS","FINISSAIS","FINISSAIT","FINISSANT","FINISSENT",
+  "FINISSEZ","FINISSIEZ","FINISSONS","FINIT","FINS","FLAMME","FLAMMES","FLECHE","FLECHES","FLEUR","FLEURS","FLEUVE","FLEUVES","FLEXIBLE","FLEXIBLES",
+  "FLOTTA","FLOTTAI","FLOTTAIS","FLOTTAIT","FLOTTAMES","FLOTTANT","FLOTTAS","FLOTTATES","FLOTTE","FLOTTEE","FLOTTEES","FLOTTENT","FLOTTER","FLOTTERA","FLOTTERAI",
+  "FLOTTERAS","FLOTTEREZ","FLOTTES","FLOTTEZ","FLOTTIEZ","FLOTTIONS","FLOTTONS","FLUIDE","FLUIDES","FONCA","FONCAI","FONCAIENT","FONCAIS","FONCAIT","FONCAMES",
+  "FONCANT","FONCAS","FONCATES","FONCE","FONCEE","FONCEES","FONCENT","FONCER","FONCERA","FONCERAI","FONCERAIS","FONCERAIT","FONCERAS","FONCERENT","FONCEREZ",
+  "FONCERIEZ","FONCERONS","FONCERONT","FONCES","FONCEZ","FONCIEZ","FONCIONS","FONCONS","FOND","FONDS","FORCA","FORCAI","FORCAIENT","FORCAIS","FORCAIT",
+  "FORCAMES","FORCANT","FORCAS","FORCATES","FORCE","FORCEE","FORCEES","FORCENT","FORCER","FORCERA","FORCERAI","FORCERAIS","FORCERAIT","FORCERAS","FORCERENT",
+  "FORCEREZ","FORCERIEZ","FORCERONS","FORCERONT","FORCES","FORCEZ","FORCIEZ","FORCIONS","FORCONS","FORET","FORETS","FORGERON","FORGERONS","FORMA","FORMAI",
+  "FORMAIENT","FORMAIS","FORMAIT","FORMAMES","FORMANT","FORMAS","FORMATES","FORME","FORMEE","FORMEES","FORMENT","FORMER","FORMERA","FORMERAI","FORMERAIS",
+  "FORMERAIT","FORMERAS","FORMERENT","FORMEREZ","FORMERIEZ","FORMERONS","FORMERONT","FORMES","FORMEZ","FORMIEZ","FORMIONS","FORMONS","FORT","FORTE","FORTES",
+  "FORTS","FOULARD","FOULARDS","FOUR","FOURNI","FOURNIE","FOURNIES","FOURNIR","FOURNIRA","FOURNIRAI","FOURNIRAS","FOURNIREZ","FOURNIS","FOURNIT","FOURS",
+  "FOYER","FOYERS","FRAGILE","FRAGILES","FRAGMENT","FRAGMENTS","FRAIS","FRAISE","FRAISES","FRAPPA","FRAPPAI","FRAPPAIS","FRAPPAIT","FRAPPAMES","FRAPPANT",
+  "FRAPPAS","FRAPPATES","FRAPPE","FRAPPEE","FRAPPEES","FRAPPENT","FRAPPER","FRAPPERA","FRAPPERAI","FRAPPERAS","FRAPPEREZ","FRAPPES","FRAPPEZ","FRAPPIEZ","FRAPPIONS",
+  "FRAPPONS","FREQUENCE","FRERE","FRERES","FROID","FROIDE","FROIDES","FROIDS","FRONT","FRONTIERE","FRONTS","FRUGAL","FRUGALE","FRUGALES","FRUGAUX",
+  "FRUIT","FRUITS","FUSEE","FUSEES","FUTUR","FUTURS","GAGNA","GAGNAI","GAGNAIENT","GAGNAIS","GAGNAIT","GAGNAMES","GAGNANT","GAGNANTS","GAGNAS",
+  "GAGNATES","GAGNE","GAGNEE","GAGNEES","GAGNENT","GAGNER","GAGNERA","GAGNERAI","GAGNERAIS","GAGNERAIT","GAGNERAS","GAGNERENT","GAGNEREZ","GAGNERIEZ","GAGNERONS",
+  "GAGNERONT","GAGNES","GAGNEZ","GAGNIEZ","GAGNIONS","GAGNONS","GALERIE","GALERIES","GARDA","GARDAI","GARDAIENT","GARDAIS","GARDAIT","GARDAMES","GARDANT",
+  "GARDAS","GARDATES","GARDE","GARDEE","GARDEES","GARDENT","GARDER","GARDERA","GARDERAI","GARDERAIS","GARDERAIT","GARDERAS","GARDERENT","GARDEREZ","GARDERIEZ",
+  "GARDERONS","GARDERONT","GARDES","GARDEZ","GARDIEZ","GARDIONS","GARDONS","GATEAU","GATEAUX","GAZON","GAZONS","GENERA","GENERAI","GENERAIS","GENERAIT",
+  "GENERAMES","GENERANT","GENERAS","GENERATES","GENERE","GENEREE","GENEREES","GENERENT","GENERER","GENERERA","GENERERAI","GENERERAS","GENEREREZ","GENERES","GENEREUSE",
+  "GENEREUX","GENEREZ","GENERIEZ","GENERIONS","GENERONS","GENIE","GENIES","GENRE","GENRES","GENTIL","GENTILE","GENTILES","GENTILS","GESTION","GESTIONS",
+  "GIRAFE","GIRAFES","GLACE","GLACES","GLISSA","GLISSAI","GLISSAIS","GLISSAIT","GLISSAMES","GLISSANT","GLISSAS","GLISSATES","GLISSE","GLISSEE","GLISSEES",
+  "GLISSENT","GLISSER","GLISSERA","GLISSERAI","GLISSERAS","GLISSEREZ","GLISSES","GLISSEZ","GLISSIEZ","GLISSIONS","GLISSONS","GLOBAL","GLOBALE","GLOBALES","GLOBALS",
+  "GLOBE","GLOBES","GOUTA","GOUTAI","GOUTAIENT","GOUTAIS","GOUTAIT","GOUTAMES","GOUTANT","GOUTAS","GOUTATES","GOUTE","GOUTEE","GOUTEES","GOUTENT",
+  "GOUTER","GOUTERA","GOUTERAI","GOUTERAIS","GOUTERAIT","GOUTERAS","GOUTERENT","GOUTEREZ","GOUTERIEZ","GOUTERONS","GOUTERONT","GOUTES","GOUTEZ","GOUTIEZ","GOUTIONS",
+  "GOUTONS","GOUVERNA","GOUVERNAI","GOUVERNAS","GOUVERNE","GOUVERNEE","GOUVERNER","GOUVERNES","GOUVERNEZ","GRACIEUSE","GRACIEUX","GRAIN","GRAINS","GRAND","GRANDE",
+  "GRANDES","GRANDI","GRANDIE","GRANDIES","GRANDIR","GRANDIRA","GRANDIRAI","GRANDIRAS","GRANDIREZ","GRANDIS","GRANDIT","GRANDS","GRAVE","GRAVES","GRIMPA",
+  "GRIMPAI","GRIMPAIS","GRIMPAIT","GRIMPAMES","GRIMPANT","GRIMPAS","GRIMPATES","GRIMPE","GRIMPEE","GRIMPEES","GRIMPENT","GRIMPER","GRIMPERA","GRIMPERAI","GRIMPERAS",
+  "GRIMPEREZ","GRIMPES","GRIMPEZ","GRIMPIEZ","GRIMPIONS","GRIMPONS","GROS","GROSE","GROSES","GROTTE","GROTTES","GROUPA","GROUPAI","GROUPAIS","GROUPAIT",
+  "GROUPAMES","GROUPANT","GROUPAS","GROUPATES","GROUPE","GROUPEE","GROUPEES","GROUPENT","GROUPER","GROUPERA","GROUPERAI","GROUPERAS","GROUPEREZ","GROUPES","GROUPEZ",
+  "GROUPIEZ","GROUPIONS","GROUPONS","GUERI","GUERIE","GUERIES","GUERIR","GUERIRA","GUERIRAI","GUERIRAS","GUERIREZ","GUERIRONS","GUERIRONT","GUERIS","GUERISSEZ",
+  "GUERIT","GUIDE","GUIDES","HABILE","HABILES","HABILLA","HABILLAI","HABILLAIS","HABILLAIT","HABILLANT","HABILLAS","HABILLE","HABILLEE","HABILLEES","HABILLENT",
+  "HABILLER","HABILLERA","HABILLES","HABILLEZ","HABILLIEZ","HABILLONS","HABITA","HABITAI","HABITAIS","HABITAIT","HABITAMES","HABITANT","HABITANTS","HABITAS","HABITATES",
+  "HABITE","HABITEE","HABITEES","HABITENT","HABITER","HABITERA","HABITERAI","HABITERAS","HABITEREZ","HABITES","HABITEZ","HABITIEZ","HABITIONS","HABITONS","HABITUDE",
+  "HABITUDES","HAMAC","HAMACS","HASARD","HASARDS","HAUT","HAUTE","HAUTES","HAUTEUR","HAUTEURS","HAUTS","HERON","HERONS","HEROS","HEUREUSE",
+  "HEUREUSES","HEUREUX","HIBOU","HIBOUS","HIER","HISTOIRE","HISTOIRES","HIVER","HIVERS","HOMME","HOMMES","HONNETE","HONNETES","HOPITAL","HOPITAUX",
+  "HOTEL","HOTELS","HUILE","HUILES","HUMBLE","HUMBLES","ICEBERG","ICEBERGS","ICI","IDEAL","IDEALE","IDEALES","IDEAUX","IDEE","IDEES",
+  "IDENTIQUE","IDENTITE","IDENTITES","IL","ILLUMINA","ILLUMINAI","ILLUMINAS","ILLUMINE","ILLUMINEE","ILLUMINER","ILLUMINES","ILLUMINEZ","ILLUSTRE","ILLUSTRES","ILS",
+  "IMAGE","IMAGES","IMAGINA","IMAGINAI","IMAGINAIS","IMAGINAIT","IMAGINANT","IMAGINAS","IMAGINE","IMAGINEE","IMAGINEES","IMAGINENT","IMAGINER","IMAGINERA","IMAGINES",
+  "IMAGINEZ","IMAGINIEZ","IMAGINONS","IMMENSE","IMMENSES","IMPACT","IMPACTS","IMPORTANT","INCIDENT","INCIDENTS","INCONNU","INCONNUS","INDIQUA","INDIQUAI","INDIQUAIS",
+  "INDIQUAIT","INDIQUANT","INDIQUAS","INDIQUE","INDIQUEE","INDIQUEES","INDIQUENT","INDIQUER","INDIQUERA","INDIQUES","INDIQUEZ","INDIQUIEZ","INDIQUONS","INDIVIDU","INDIVIDUS",
+  "INDUSTRIE","INEGAL","INEGALE","INEGALES","INEGAUX","INFINI","INFINIE","INFINIES","INFINIS","INFLUENCE","INFORMA","INFORMAI","INFORMAIS","INFORMAIT","INFORMANT",
+  "INFORMAS","INFORME","INFORMEE","INFORMEES","INFORMENT","INFORMER","INFORMERA","INFORMES","INFORMEZ","INFORMIEZ","INFORMONS","INGENIEUR","INGENIEUX","INITIAL","INITIALE",
+  "INITIALES","INITIAUX","INSECTE","INSECTES","INSISTA","INSISTAI","INSISTAIS","INSISTAIT","INSISTANT","INSISTAS","INSISTE","INSISTEE","INSISTEES","INSISTENT","INSISTER",
+  "INSISTERA","INSISTES","INSISTEZ","INSISTIEZ","INSISTONS","INSOLITE","INSOLITES","INSTALLA","INSTALLAI","INSTALLAS","INSTALLE","INSTALLEE","INSTALLER","INSTALLES","INSTALLEZ",
+  "INTENSE","INTENSES","INTENTION","INUTILE","INUTILES","INVENTA","INVENTAI","INVENTAIS","INVENTAIT","INVENTANT","INVENTAS","INVENTE","INVENTEE","INVENTEES","INVENTENT",
+  "INVENTER","INVENTERA","INVENTES","INVENTEUR","INVENTEZ","INVENTIEZ","INVENTONS","INVITA","INVITAI","INVITAIS","INVITAIT","INVITAMES","INVITANT","INVITAS","INVITATES",
+  "INVITE","INVITEE","INVITEES","INVITENT","INVITER","INVITERA","INVITERAI","INVITERAS","INVITEREZ","INVITES","INVITEZ","INVITIEZ","INVITIONS","INVITONS","JAMAIS",
+  "JARDIN","JARDINS","JE","JETON","JETONS","JEUNE","JEUNES","JOLI","JOLIE","JOLIES","JOLIS","JOUA","JOUAI","JOUAIENT","JOUAIS",
+  "JOUAIT","JOUAMES","JOUANT","JOUAS","JOUATES","JOUE","JOUEE","JOUEES","JOUENT","JOUER","JOUERA","JOUERAI","JOUERAIS","JOUERAIT","JOUERAS",
+  "JOUERENT","JOUEREZ","JOUERIEZ","JOUERIONS","JOUERONS","JOUERONT","JOUES","JOUEUR","JOUEURS","JOUEZ","JOUIEZ","JOUIONS","JOUONS","JOURNAL","JOURNAUX",
+  "JUGEMENT","JUGEMENTS","JUMEAU","JUMEAUX","JUSTE","JUSTES","JUSTICE","JUSTICES","KILOMETRE","LA","LANCA","LANCAI","LANCAIENT","LANCAIS","LANCAIT",
+  "LANCAMES","LANCANT","LANCAS","LANCATES","LANCE","LANCEE","LANCEES","LANCENT","LANCER","LANCERA","LANCERAI","LANCERAIS","LANCERAIT","LANCERAS","LANCERENT",
+  "LANCEREZ","LANCERIEZ","LANCERONS","LANCERONT","LANCES","LANCEZ","LANCIEZ","LANCIONS","LANCONS","LANGAGE","LANGAGES","LAPIN","LAPINS","LARGE","LARGES",
+  "LARME","LARMES","LAVA","LAVAI","LAVAIENT","LAVAIS","LAVAIT","LAVAMES","LAVANT","LAVAS","LAVATES","LAVE","LAVEE","LAVEES","LAVENT",
+  "LAVER","LAVERA","LAVERAI","LAVERAIS","LAVERAIT","LAVERAS","LAVERENT","LAVEREZ","LAVERIEZ","LAVERIONS","LAVERONS","LAVERONT","LAVES","LAVEZ","LAVIEZ",
+  "LAVIONS","LAVONS","LE","LECON","LECONS","LECTEUR","LECTEURS","LECTURE","LECTURES","LEGER","LEGERE","LEGERES","LEGERS","LENDEMAIN","LENT",
+  "LENTE","LENTES","LENTEUR","LENTEURS","LENTS","LES","LETTRE","LETTRES","LEUR","LEURS","LEVA","LEVAI","LEVAIENT","LEVAIS","LEVAIT",
+  "LEVAMES","LEVANT","LEVAS","LEVATES","LEVE","LEVEE","LEVEES","LEVENT","LEVER","LEVERA","LEVERAI","LEVERAIS","LEVERAIT","LEVERAS","LEVERENT",
+  "LEVEREZ","LEVERIEZ","LEVERIONS","LEVERONS","LEVERONT","LEVES","LEVEZ","LEVIEZ","LEVIONS","LEVONS","LIBERA","LIBERAI","LIBERAIS","LIBERAIT","LIBERAMES",
+  "LIBERANT","LIBERAS","LIBERATES","LIBERE","LIBEREE","LIBEREES","LIBERENT","LIBERER","LIBERERA","LIBERERAI","LIBERERAS","LIBEREREZ","LIBERES","LIBEREZ","LIBERIEZ",
+  "LIBERIONS","LIBERONS","LIBERTE","LIBERTES","LIBRE","LIBRES","LIEN","LIENS","LIERRE","LIERRES","LIMITE","LIMITES","LION","LIONS","LIQUIDE",
+  "LIQUIDES","LIRE","LISTE","LISTES","LIVRA","LIVRAI","LIVRAIENT","LIVRAIS","LIVRAIT","LIVRAMES","LIVRANT","LIVRAS","LIVRATES","LIVRE","LIVREE",
+  "LIVREES","LIVRENT","LIVRER","LIVRERA","LIVRERAI","LIVRERAIS","LIVRERAIT","LIVRERAS","LIVRERENT","LIVREREZ","LIVRERIEZ","LIVRERONS","LIVRERONT","LIVRES","LIVREZ",
+  "LIVRIEZ","LIVRIONS","LIVRONS","LOGA","LOGAI","LOGAIENT","LOGAIS","LOGAIT","LOGAMES","LOGANT","LOGAS","LOGATES","LOGE","LOGEE","LOGEES",
+  "LOGEMENT","LOGEMENTS","LOGENT","LOGER","LOGERA","LOGERAI","LOGERAIS","LOGERAIT","LOGERAS","LOGERENT","LOGEREZ","LOGERIEZ","LOGERIONS","LOGERONS","LOGERONT",
+  "LOGES","LOGEZ","LOGICIEL","LOGICIELS","LOGIEZ","LOGIONS","LOGIQUE","LOGIQUES","LOGONS","LOINTAIN","LOINTAINE","LOINTAINS","LONG","LONGS","LONGUE",
+  "LONGUES","LOUP","LOUPS","LOURD","LOURDE","LOURDES","LOURDS","LUEUR","LUEURS","LUMIERE","LUMIERES","LUMINEUSE","LUMINEUX","LUNDI","LUNDIS",
+  "LUNE","LUNES","LYCEE","LYCEES","LÀ","MA","MACHINE","MACHINES","MACON","MACONS","MAGASIN","MAGASINS","MAILLOT","MAILLOTS","MAIS",
+  "MAISON","MAISONS","MAL","MANDAT","MANDATS","MANGA","MANGAI","MANGAIENT","MANGAIS","MANGAIT","MANGAMES","MANGANT","MANGAS","MANGATES","MANGE",
+  "MANGEE","MANGEES","MANGENT","MANGER","MANGERA","MANGERAI","MANGERAIS","MANGERAIT","MANGERAS","MANGERENT","MANGEREZ","MANGERIEZ","MANGERONS","MANGERONT","MANGES",
+  "MANGEZ","MANGIEZ","MANGIONS","MANGONS","MARCHA","MARCHAI","MARCHAIS","MARCHAIT","MARCHAMES","MARCHAND","MARCHANDS","MARCHANT","MARCHAS","MARCHATES","MARCHE",
+  "MARCHEE","MARCHEES","MARCHENT","MARCHER","MARCHERA","MARCHERAI","MARCHERAS","MARCHEREZ","MARCHES","MARCHEZ","MARCHIEZ","MARCHIONS","MARCHONS","MAREE","MAREES",
+  "MARIAGE","MARIAGES","MARQUE","MARQUES","MATERIAU","MATERIAUS","MATIN","MATINS","MAUVAIS","MAUVAISE","MAUVAISES","ME","MECANISME","MEDECIN","MEDECINS",
+  "MELANGA","MELANGAI","MELANGAIS","MELANGAIT","MELANGANT","MELANGAS","MELANGE","MELANGEE","MELANGEES","MELANGENT","MELANGER","MELANGERA","MELANGES","MELANGEZ","MELANGIEZ",
+  "MELANGONS","MEMOIRE","MEMOIRES","MEMORISA","MEMORISAI","MEMORISAS","MEMORISE","MEMORISEE","MEMORISER","MEMORISES","MEMORISEZ","MERE","MERES","MERITE","MERITES",
+  "MESSAGE","MESSAGES","MESSE","MESSES","MESURA","MESURAI","MESURAIS","MESURAIT","MESURAMES","MESURANT","MESURAS","MESURATES","MESURE","MESUREE","MESUREES",
+  "MESURENT","MESURER","MESURERA","MESURERAI","MESURERAS","MESUREREZ","MESURES","MESUREZ","MESURIEZ","MESURIONS","MESURONS","METAL","METAUX","METHODE","METHODES",
+  "METIER","METIERS","METRO","METROS","METTRE","MILITAIRE","MINISTRE","MINISTRES","MIRACLE","MIRACLES","MIROIR","MIROIRS","MISSION","MISSIONS","MOBILE",
+  "MOBILES","MODELE","MODELES","MODERNE","MODERNES","MODESTE","MODESTES","MODIFIA","MODIFIAI","MODIFIAIS","MODIFIAIT","MODIFIANT","MODIFIAS","MODIFIE","MODIFIEE",
+  "MODIFIEES","MODIFIENT","MODIFIER","MODIFIERA","MODIFIES","MODIFIEZ","MODIFIIEZ","MODIFIONS","MOINS","MON","MONDE","MONDES","MONITEUR","MONITEURS","MONSTRE",
+  "MONSTRES","MONTA","MONTAGNE","MONTAGNES","MONTAI","MONTAIENT","MONTAIS","MONTAIT","MONTAMES","MONTANT","MONTANTS","MONTAS","MONTATES","MONTE","MONTEE",
+  "MONTEES","MONTENT","MONTER","MONTERA","MONTERAI","MONTERAIS","MONTERAIT","MONTERAS","MONTERENT","MONTEREZ","MONTERIEZ","MONTERONS","MONTERONT","MONTES","MONTEZ",
+  "MONTIEZ","MONTIONS","MONTONS","MONTRA","MONTRAI","MONTRAIS","MONTRAIT","MONTRAMES","MONTRANT","MONTRAS","MONTRATES","MONTRE","MONTREE","MONTREES","MONTRENT",
+  "MONTRER","MONTRERA","MONTRERAI","MONTRERAS","MONTREREZ","MONTRES","MONTREZ","MONTRIEZ","MONTRIONS","MONTRONS","MONUMENT","MONUMENTS","MORAL","MORALE","MORALES",
+  "MORAUX","MOTEUR","MOTEURS","MOU","MOUCHE","MOUCHES","MOUE","MOUES","MOUS","MOUTON","MOUTONS","MOUVEMENT","MULTIPLIA","MULTIPLIE","MUR",
+  "MURMURE","MURMURES","MURS","MUSCLE","MUSCLES","MUSEE","MUSEES","MYSTERE","MYSTERES","MÊME","NAGA","NAGAI","NAGAIENT","NAGAIS","NAGAIT",
+  "NAGAMES","NAGANT","NAGAS","NAGATES","NAGE","NAGEE","NAGEES","NAGENT","NAGER","NAGERA","NAGERAI","NAGERAIS","NAGERAIT","NAGERAS","NAGERENT",
+  "NAGEREZ","NAGERIEZ","NAGERIONS","NAGERONS","NAGERONT","NAGES","NAGEZ","NAGIEZ","NAGIONS","NAGONS","NAIF","NAIFE","NAIFES","NAIFS","NATURE",
+  "NATUREL","NATURELLE","NATURELS","NATURES","NAVIRE","NAVIRES","NEGATIF","NEGATIFS","NEGATIVE","NEGATIVES","NEIGE","NEIGES","NERVEUSE","NERVEUSES","NERVEUX",
+  "NETTOYAGE","NEUF","NEUFE","NEUFES","NEUFS","NEUTRE","NEUTRES","NI","NIVEAU","NIVEAUX","NOBLE","NOBLES","NOMMA","NOMMAI","NOMMAIENT",
+  "NOMMAIS","NOMMAIT","NOMMAMES","NOMMANT","NOMMAS","NOMMATES","NOMME","NOMMEE","NOMMEES","NOMMENT","NOMMER","NOMMERA","NOMMERAI","NOMMERAIS","NOMMERAIT",
+  "NOMMERAS","NOMMERENT","NOMMEREZ","NOMMERIEZ","NOMMERONS","NOMMERONT","NOMMES","NOMMEZ","NOMMIEZ","NOMMIONS","NOMMONS","NORME","NORMES","NOS","NOTA",
+  "NOTAI","NOTAIENT","NOTAIS","NOTAIT","NOTAMES","NOTANT","NOTAS","NOTATES","NOTE","NOTEE","NOTEES","NOTENT","NOTER","NOTERA","NOTERAI",
+  "NOTERAIS","NOTERAIT","NOTERAS","NOTERENT","NOTEREZ","NOTERIEZ","NOTERIONS","NOTERONS","NOTERONT","NOTES","NOTEZ","NOTIEZ","NOTION","NOTIONS","NOTONS",
+  "NOUGAT","NOUGATS","NOUS","NOUVEAU","NOUVEAUE","NOUVEAUES","NOUVEAUX","NUANCE","NUANCES","NUIT","NUITS","OBJECTIF","OBJECTIFS","OBJECTIVE","OBJET",
+  "OBJETS","OBSCUR","OBSCURE","OBSCURES","OBSCURS","OBSERVA","OBSERVAI","OBSERVAIS","OBSERVAIT","OBSERVANT","OBSERVAS","OBSERVE","OBSERVEE","OBSERVEES","OBSERVENT",
+  "OBSERVER","OBSERVERA","OBSERVES","OBSERVEZ","OBSERVIEZ","OBSERVONS","OBSTACLE","OBSTACLES","OBTENIR","OCCASION","OCCASIONS","OCCUPA","OCCUPAI","OCCUPAIS","OCCUPAIT",
+  "OCCUPAMES","OCCUPANT","OCCUPAS","OCCUPATES","OCCUPE","OCCUPEE","OCCUPEES","OCCUPENT","OCCUPER","OCCUPERA","OCCUPERAI","OCCUPERAS","OCCUPEREZ","OCCUPES","OCCUPEZ",
+  "OCCUPIEZ","OCCUPIONS","OCCUPONS","OFFICIER","OFFICIERS","OFFRI","OFFRIE","OFFRIES","OFFRIR","OFFRIRA","OFFRIRAI","OFFRIRAS","OFFRIREZ","OFFRIRONS","OFFRIRONT",
+  "OFFRIS","OFFRISSEZ","OFFRIT","OISEAU","OISEAUX","OMBRE","OMBRES","ON","OPAQUE","OPAQUES","OPERATEUR","OPERATION","OPINION","OPINIONS","OPTIMISTE",
+  "OR","ORANGE","ORANGES","ORDINAIRE","ORDRE","ORDRES","ORGANE","ORGANES","ORGANISA","ORGANISAI","ORGANISAS","ORGANISE","ORGANISEE","ORGANISER","ORGANISES",
+  "ORGANISEZ","ORIENTA","ORIENTAI","ORIENTAIS","ORIENTAIT","ORIENTANT","ORIENTAS","ORIENTE","ORIENTEE","ORIENTEES","ORIENTENT","ORIENTER","ORIENTERA","ORIENTES","ORIENTEZ",
+  "ORIENTIEZ","ORIENTONS","ORIGINAL","ORIGINALE","ORIGINAUX","ORIGINE","ORIGINES","OU","OUBLIA","OUBLIAI","OUBLIAIS","OUBLIAIT","OUBLIAMES","OUBLIANT","OUBLIAS",
+  "OUBLIATES","OUBLIE","OUBLIEE","OUBLIEES","OUBLIENT","OUBLIER","OUBLIERA","OUBLIERAI","OUBLIERAS","OUBLIEREZ","OUBLIES","OUBLIEZ","OUBLIIEZ","OUBLIIONS","OUBLIONS",
+  "OUTIL","OUTILS","OUVERT","OUVERTE","OUVERTES","OUVERTS","OUVRAGE","OUVRAGES","OUVRI","OUVRIE","OUVRIER","OUVRIERS","OUVRIES","OUVRIR","OUVRIRA",
+  "OUVRIRAI","OUVRIRAS","OUVRIREZ","OUVRIRONS","OUVRIRONT","OUVRIS","OUVRISSEZ","OUVRIT","OÙ","PACTE","PACTES","PAGE","PAGES","PAIX","PALETTE",
+  "PALETTES","PANNE","PANNES","PAPIER","PAPIERS","PAQUET","PAQUETS","PAR","PARCE","PARFAIT","PARFAITE","PARFAITES","PARFAITS","PARFOIS","PARLA",
+  "PARLAI","PARLAIENT","PARLAIS","PARLAIT","PARLAMES","PARLANT","PARLAS","PARLATES","PARLE","PARLEE","PARLEES","PARLENT","PARLER","PARLERA","PARLERAI",
+  "PARLERAIS","PARLERAIT","PARLERAS","PARLERENT","PARLEREZ","PARLERIEZ","PARLERONS","PARLERONT","PARLES","PARLEZ","PARLIEZ","PARLIONS","PARLONS","PAROLE","PAROLES",
+  "PART","PARTAGA","PARTAGAI","PARTAGAIS","PARTAGAIT","PARTAGANT","PARTAGAS","PARTAGE","PARTAGEE","PARTAGEES","PARTAGENT","PARTAGER","PARTAGERA","PARTAGES","PARTAGEZ",
+  "PARTAGIEZ","PARTAGONS","PARTICIPA","PARTICIPE","PARTS","PASSA","PASSAGE","PASSAGES","PASSAI","PASSAIENT","PASSAIS","PASSAIT","PASSAMES","PASSANT","PASSAS",
+  "PASSATES","PASSE","PASSEE","PASSEES","PASSENT","PASSER","PASSERA","PASSERAI","PASSERAIS","PASSERAIT","PASSERAS","PASSERENT","PASSEREZ","PASSERIEZ","PASSERONS",
+  "PASSERONT","PASSES","PASSEZ","PASSIEZ","PASSIONNE","PASSIONS","PASSONS","PATIENCE","PATIENCES","PATIENT","PATIENTA","PATIENTAI","PATIENTAS","PATIENTE","PATIENTEE",
+  "PATIENTER","PATIENTES","PATIENTEZ","PATIENTS","PATRON","PATRONS","PAUSE","PAUSES","PAUVRE","PAUVRES","PAYSAGE","PAYSAGES","PEINTURE","PEINTURES","PELAGE",
+  "PELAGES","PENDANT","PENSA","PENSAI","PENSAIENT","PENSAIS","PENSAIT","PENSAMES","PENSANT","PENSAS","PENSATES","PENSE","PENSEE","PENSEES","PENSENT",
+  "PENSER","PENSERA","PENSERAI","PENSERAIS","PENSERAIT","PENSERAS","PENSERENT","PENSEREZ","PENSERIEZ","PENSERONS","PENSERONT","PENSES","PENSEZ","PENSIEZ","PENSIONS",
+  "PENSONS","PERIMETRE","PERIODE","PERIODES","PERLE","PERLES","PERMANENT","PERMETTRE","PERSONNEL","PESA","PESAI","PESAIENT","PESAIS","PESAIT","PESAMES",
+  "PESANT","PESAS","PESATES","PESE","PESEE","PESEES","PESENT","PESER","PESERA","PESERAI","PESERAIS","PESERAIT","PESERAS","PESERENT","PESEREZ",
+  "PESERIEZ","PESERIONS","PESERONS","PESERONT","PESES","PESEZ","PESIEZ","PESIONS","PESONS","PETIT","PETITE","PETITES","PETITS","PEU","PEUREUSE",
+  "PEUREUSES","PEUREUX","PHARE","PHARES","PHRASE","PHRASES","PIECE","PIECES","PILE","PILES","PILOTE","PILOTES","PISTE","PISTES","PLACA",
+  "PLACAI","PLACAIENT","PLACAIS","PLACAIT","PLACAMES","PLACANT","PLACAS","PLACATES","PLACE","PLACEE","PLACEES","PLACENT","PLACER","PLACERA","PLACERAI",
+  "PLACERAIS","PLACERAIT","PLACERAS","PLACERENT","PLACEREZ","PLACERIEZ","PLACERONS","PLACERONT","PLACES","PLACEZ","PLACIEZ","PLACIONS","PLACONS","PLAINTE","PLAINTES",
+  "PLAIRE","PLANCHER","PLANCHERS","PLANETE","PLANETES","PLANTA","PLANTAI","PLANTAIS","PLANTAIT","PLANTAMES","PLANTANT","PLANTAS","PLANTATES","PLANTE","PLANTEE",
+  "PLANTEES","PLANTENT","PLANTER","PLANTERA","PLANTERAI","PLANTERAS","PLANTEREZ","PLANTES","PLANTEZ","PLANTIEZ","PLANTIONS","PLANTONS","PLASTIQUE","PLATEAU","PLATEAUX",
+  "PLAUSIBLE","PLEIN","PLEINE","PLEINES","PLEINS","PLEURA","PLEURAI","PLEURAIS","PLEURAIT","PLEURAMES","PLEURANT","PLEURAS","PLEURATES","PLEURE","PLEUREE",
+  "PLEUREES","PLEURENT","PLEURER","PLEURERA","PLEURERAI","PLEURERAS","PLEUREREZ","PLEURES","PLEUREZ","PLEURIEZ","PLEURIONS","PLEURONS","PLIA","PLIAI","PLIAIENT",
+  "PLIAIS","PLIAIT","PLIAMES","PLIANT","PLIAS","PLIATES","PLIE","PLIEE","PLIEES","PLIENT","PLIER","PLIERA","PLIERAI","PLIERAIS","PLIERAIT",
+  "PLIERAS","PLIERENT","PLIEREZ","PLIERIEZ","PLIERIONS","PLIERONS","PLIERONT","PLIES","PLIEZ","PLIIEZ","PLIIONS","PLIONS","PLONGA","PLONGAI","PLONGAIS",
+  "PLONGAIT","PLONGAMES","PLONGANT","PLONGAS","PLONGATES","PLONGE","PLONGEE","PLONGEES","PLONGENT","PLONGER","PLONGERA","PLONGERAI","PLONGERAS","PLONGEREZ","PLONGES",
+  "PLONGEZ","PLONGIEZ","PLONGIONS","PLONGONS","PLUME","PLUMES","PLUS","POIDS","POINT","POINTS","POISSON","POISSONS","POIVRE","POIVRES","POMME",
+  "POMMES","PONT","PONTS","POPULAIRE","PORTA","PORTAI","PORTAIENT","PORTAIS","PORTAIT","PORTAMES","PORTANT","PORTAS","PORTATES","PORTE","PORTEE",
+  "PORTEES","PORTENT","PORTER","PORTERA","PORTERAI","PORTERAIS","PORTERAIT","PORTERAS","PORTERENT","PORTEREZ","PORTERIEZ","PORTERONS","PORTERONT","PORTES","PORTEZ",
+  "PORTIEZ","PORTIONS","PORTONS","POSA","POSAI","POSAIENT","POSAIS","POSAIT","POSAMES","POSANT","POSAS","POSATES","POSE","POSEE","POSEES",
+  "POSENT","POSER","POSERA","POSERAI","POSERAIS","POSERAIT","POSERAS","POSERENT","POSEREZ","POSERIEZ","POSERIONS","POSERONS","POSERONT","POSES","POSEZ",
+  "POSIEZ","POSIONS","POSITIF","POSITIFS","POSITION","POSITIONS","POSITIVE","POSITIVES","POSONS","POSTE","POSTES","POUMON","POUMONS","POUR","POURQUOI",
+  "POUSSA","POUSSAI","POUSSAIS","POUSSAIT","POUSSAMES","POUSSANT","POUSSAS","POUSSATES","POUSSE","POUSSEE","POUSSEES","POUSSENT","POUSSER","POUSSERA","POUSSERAI",
+  "POUSSERAS","POUSSEREZ","POUSSES","POUSSEZ","POUSSIEZ","POUSSIONS","POUSSONS","PRAIRIE","PRAIRIES","PRATIQUA","PRATIQUAI","PRATIQUAS","PRATIQUE","PRATIQUEE","PRATIQUER",
+  "PRATIQUES","PRATIQUEZ","PRECIEUSE","PRECIEUX","PRECIS","PRECISE","PRECISES","PREFET","PREFETS","PREMIER","PREMIERE","PREMIERES","PREMIERS","PRENDRE","PREPARA",
+  "PREPARAI","PREPARAIS","PREPARAIT","PREPARANT","PREPARAS","PREPARE","PREPAREE","PREPAREES","PREPARENT","PREPARER","PREPARERA","PREPARES","PREPAREZ","PREPARIEZ","PREPARONS",
+  "PRESENCE","PRESENCES","PRESENTA","PRESENTAI","PRESENTAS","PRESENTE","PRESENTEE","PRESENTER","PRESENTES","PRESENTEZ","PRESSION","PRESSIONS","PREUVE","PREUVES","PRINCIPE",
+  "PRINCIPES","PRIORITE","PRIORITES","PRISE","PRISES","PROBLEME","PROBLEMES","PROCEDE","PROCEDES","PROCEDURE","PROCESSUS","PRODUIRE","PRODUIT","PRODUITS","PROFIL",
+  "PROFILS","PROFOND","PROFONDE","PROFONDES","PROFONDS","PROGRAMME","PROGRES","PROGRESSA","PROGRESSE","PROJET","PROJETS","PROPOSA","PROPOSAI","PROPOSAIS","PROPOSAIT",
+  "PROPOSANT","PROPOSAS","PROPOSE","PROPOSEE","PROPOSEES","PROPOSENT","PROPOSER","PROPOSERA","PROPOSES","PROPOSEZ","PROPOSIEZ","PROPOSONS","PROPRE","PROPRES","PROTEGA",
+  "PROTEGAI","PROTEGAIS","PROTEGAIT","PROTEGANT","PROTEGAS","PROTEGE","PROTEGEE","PROTEGEES","PROTEGENT","PROTEGER","PROTEGERA","PROTEGES","PROTEGEZ","PROTEGIEZ","PROTEGONS",
+  "PROVINCE","PROVINCES","PRUDENT","PRUDENTE","PRUDENTES","PRUDENTS","PUBLIC","PUBLICITE","PUBLICS","PUIS","PUISSANT","PUISSANTE","PUISSANTS","QUALITE","QUALITES",
+  "QUAND","QUARTIER","QUARTIERS","QUE","QUEL","QUELQUE","QUESTION","QUESTIONS","QUI","QUITTA","QUITTAI","QUITTAIS","QUITTAIT","QUITTAMES","QUITTANT",
+  "QUITTAS","QUITTATES","QUITTE","QUITTEE","QUITTEES","QUITTENT","QUITTER","QUITTERA","QUITTERAI","QUITTERAS","QUITTEREZ","QUITTES","QUITTEZ","QUITTIEZ","QUITTIONS",
+  "QUITTONS","QUOI","RACINE","RACINES","RACONTA","RACONTAI","RACONTAIS","RACONTAIT","RACONTANT","RACONTAS","RACONTE","RACONTEE","RACONTEES","RACONTENT","RACONTER",
+  "RACONTERA","RACONTES","RACONTEZ","RACONTIEZ","RACONTONS","RADIS","RAISONNA","RAISONNAI","RAISONNAS","RAISONNE","RAISONNEE","RAISONNER","RAISONNES","RAISONNEZ","RAMASSA",
+  "RAMASSAI","RAMASSAIS","RAMASSAIT","RAMASSANT","RAMASSAS","RAMASSE","RAMASSEE","RAMASSEES","RAMASSENT","RAMASSER","RAMASSERA","RAMASSES","RAMASSEZ","RAMASSIEZ","RAMASSONS",
+  "RANG","RANGA","RANGAI","RANGAIENT","RANGAIS","RANGAIT","RANGAMES","RANGANT","RANGAS","RANGATES","RANGE","RANGEE","RANGEES","RANGENT","RANGER",
+  "RANGERA","RANGERAI","RANGERAIS","RANGERAIT","RANGERAS","RANGERENT","RANGEREZ","RANGERIEZ","RANGERONS","RANGERONT","RANGES","RANGEZ","RANGIEZ","RANGIONS","RANGONS",
+  "RANGS","RAPIDE","RAPIDES","RAPPORT","RAPPORTS","RARE","RARES","RATIONNEL","REACTION","REACTIONS","REALISA","REALISAI","REALISAIS","REALISAIT","REALISANT",
+  "REALISAS","REALISE","REALISEE","REALISEES","REALISENT","REALISER","REALISERA","REALISES","REALISEZ","REALISIEZ","REALISONS","REALITE","REALITES","RECEVOI","RECEVOIE",
+  "RECEVOIES","RECEVOIR","RECEVOIRA","RECEVOIS","RECEVOIT","RECIT","RECITS","RECORD","RECORDS","RECUPERA","RECUPERAI","RECUPERAS","RECUPERE","RECUPEREE","RECUPERER",
+  "RECUPERES","RECUPEREZ","REEL","REELLE","REELLES","REELS","REFLECHI","REFLECHIE","REFLECHIR","REFLECHIS","REFLECHIT","REFLEXION","REGION","REGIONS","REGLA",
+  "REGLAI","REGLAIENT","REGLAIS","REGLAIT","REGLAMES","REGLANT","REGLAS","REGLATES","REGLE","REGLEE","REGLEES","REGLEMENT","REGLENT","REGLER","REGLERA",
+  "REGLERAI","REGLERAIS","REGLERAIT","REGLERAS","REGLERENT","REGLEREZ","REGLERIEZ","REGLERONS","REGLERONT","REGLES","REGLEZ","REGLIEZ","REGLIONS","REGLONS","REGULIER",
+  "REGULIERE","REGULIERS","REJOINDRE","RELATION","RELATIONS","RELIA","RELIAI","RELIAIENT","RELIAIS","RELIAIT","RELIAMES","RELIANT","RELIAS","RELIATES","RELIE",
+  "RELIEE","RELIEES","RELIENT","RELIER","RELIERA","RELIERAI","RELIERAIS","RELIERAIT","RELIERAS","RELIERENT","RELIEREZ","RELIERIEZ","RELIERONS","RELIERONT","RELIES",
+  "RELIEZ","RELIIEZ","RELIIONS","RELIONS","REMARQUA","REMARQUAI","REMARQUAS","REMARQUE","REMARQUEE","REMARQUER","REMARQUES","REMARQUEZ","REMPLI","REMPLIE","REMPLIES",
+  "REMPLIR","REMPLIRA","REMPLIRAI","REMPLIRAS","REMPLIREZ","REMPLIS","REMPLIT","RENCONTRA","RENCONTRE","RENDRE","RENTRA","RENTRAI","RENTRAIS","RENTRAIT","RENTRAMES",
+  "RENTRANT","RENTRAS","RENTRATES","RENTRE","RENTREE","RENTREES","RENTRENT","RENTRER","RENTRERA","RENTRERAI","RENTRERAS","RENTREREZ","RENTRES","RENTREZ","RENTRIEZ",
+  "RENTRIONS","RENTRONS","REPARA","REPARAI","REPARAIS","REPARAIT","REPARAMES","REPARANT","REPARAS","REPARATES","REPARE","REPAREE","REPAREES","REPARENT","REPARER",
+  "REPARERA","REPARERAI","REPARERAS","REPAREREZ","REPARES","REPAREZ","REPARIEZ","REPARIONS","REPARONS","REPAS","REPASSA","REPASSAI","REPASSAIS","REPASSAIT","REPASSANT",
+  "REPASSAS","REPASSE","REPASSEE","REPASSEES","REPASSENT","REPASSER","REPASSERA","REPASSES","REPASSEZ","REPASSIEZ","REPASSONS","REPETA","REPETAI","REPETAIS","REPETAIT",
+  "REPETAMES","REPETANT","REPETAS","REPETATES","REPETE","REPETEE","REPETEES","REPETENT","REPETER","REPETERA","REPETERAI","REPETERAS","REPETEREZ","REPETES","REPETEZ",
+  "REPETIEZ","REPETIONS","REPETONS","REPONDRE","REPONSE","REPONSES","REPRENDRE","REQUETE","REQUETES","RESEAU","RESEAUX","RESIDENCE","RESISTANT","RESPECT","RESPECTA",
+  "RESPECTAI","RESPECTAS","RESPECTE","RESPECTEE","RESPECTER","RESPECTES","RESPECTEZ","RESPECTS","RESSOURCE","RESTA","RESTAI","RESTAIENT","RESTAIS","RESTAIT","RESTAMES",
+  "RESTANT","RESTAS","RESTATES","RESTE","RESTEE","RESTEES","RESTENT","RESTER","RESTERA","RESTERAI","RESTERAIS","RESTERAIT","RESTERAS","RESTERENT","RESTEREZ",
+  "RESTERIEZ","RESTERONS","RESTERONT","RESTES","RESTEZ","RESTIEZ","RESTIONS","RESTONS","RESULTAT","RESULTATS","RETABLI","RETABLIE","RETABLIES","RETABLIR","RETABLIRA",
+  "RETABLIS","RETABLIT","RETOUR","RETOURNA","RETOURNAI","RETOURNAS","RETOURNE","RETOURNEE","RETOURNER","RETOURNES","RETOURNEZ","RETOURS","REUSSI","REUSSIE","REUSSIES",
+  "REUSSIR","REUSSIRA","REUSSIRAI","REUSSIRAS","REUSSIREZ","REUSSIS","REUSSIT","REVA","REVAI","REVAIENT","REVAIS","REVAIT","REVAMES","REVANT","REVAS",
+  "REVATES","REVE","REVEE","REVEES","REVEIL","REVEILLA","REVEILLAI","REVEILLAS","REVEILLE","REVEILLEE","REVEILLER","REVEILLES","REVEILLEZ","REVEILS","REVENT",
+  "REVER","REVERA","REVERAI","REVERAIS","REVERAIT","REVERAS","REVERENT","REVEREZ","REVERIEZ","REVERIONS","REVERONS","REVERONT","REVES","REVEZ","REVIEZ",
+  "REVIONS","REVONS","RICHE","RICHES","RICHESSE","RICHESSES","RIDEAU","RIDEAUX","RIEN","RIRE","RISQUA","RISQUAI","RISQUAIS","RISQUAIT","RISQUAMES",
+  "RISQUANT","RISQUAS","RISQUATES","RISQUE","RISQUEE","RISQUEES","RISQUENT","RISQUER","RISQUERA","RISQUERAI","RISQUERAS","RISQUEREZ","RISQUES","RISQUEZ","RISQUIEZ",
+  "RISQUIONS","RISQUONS","RIVIERE","RIVIERES","ROBUSTE","ROBUSTES","ROCHER","ROCHERS","ROND","RONDE","RONDES","RONDS","ROSE","ROSES","ROSIER",
+  "ROSIERS","ROUGE","ROUGES","ROULA","ROULAI","ROULAIENT","ROULAIS","ROULAIT","ROULAMES","ROULANT","ROULAS","ROULATES","ROULE","ROULEE","ROULEES",
+  "ROULENT","ROULER","ROULERA","ROULERAI","ROULERAIS","ROULERAIT","ROULERAS","ROULERENT","ROULEREZ","ROULERIEZ","ROULERONS","ROULERONT","ROULES","ROULEZ","ROULIEZ",
+  "ROULIONS","ROULONS","ROUTE","ROUTES","RUBIS","RUDE","RUDES","RYTHME","RYTHMES","SA","SABLE","SABLES","SAGE","SAGES","SAIN",
+  "SAINE","SAINES","SAINS","SAISON","SAISONS","SALADE","SALADES","SALUA","SALUAI","SALUAIENT","SALUAIS","SALUAIT","SALUAMES","SALUANT","SALUAS",
+  "SALUATES","SALUE","SALUEE","SALUEES","SALUENT","SALUER","SALUERA","SALUERAI","SALUERAIS","SALUERAIT","SALUERAS","SALUERENT","SALUEREZ","SALUERIEZ","SALUERONS",
+  "SALUERONT","SALUES","SALUEZ","SALUIEZ","SALUIONS","SALUONS","SANS","SAPIN","SAPINS","SAUTA","SAUTAI","SAUTAIENT","SAUTAIS","SAUTAIT","SAUTAMES",
+  "SAUTANT","SAUTAS","SAUTATES","SAUTE","SAUTEE","SAUTEES","SAUTENT","SAUTER","SAUTERA","SAUTERAI","SAUTERAIS","SAUTERAIT","SAUTERAS","SAUTERENT","SAUTEREZ",
+  "SAUTERIEZ","SAUTERONS","SAUTERONT","SAUTES","SAUTEZ","SAUTIEZ","SAUTIONS","SAUTONS","SAUVA","SAUVAI","SAUVAIENT","SAUVAIS","SAUVAIT","SAUVAMES","SAUVANT",
+  "SAUVAS","SAUVATES","SAUVE","SAUVEE","SAUVEES","SAUVENT","SAUVER","SAUVERA","SAUVERAI","SAUVERAIS","SAUVERAIT","SAUVERAS","SAUVERENT","SAUVEREZ","SAUVERIEZ",
+  "SAUVERONS","SAUVERONT","SAUVES","SAUVEZ","SAUVIEZ","SAUVIONS","SAUVONS","SAVANT","SAVANTE","SAVANTES","SAVANTS","SAVOI","SAVOIE","SAVOIES","SAVOIR",
+  "SAVOIRA","SAVOIRAI","SAVOIRAS","SAVOIREZ","SAVOIRONS","SAVOIRONT","SAVOIS","SAVOISSEZ","SAVOIT","SCIENCE","SCIENCES","SE","SEANCE","SEANCES","SECTEUR",
+  "SECTEURS","SECURITE","SECURITES","SELON","SEMBLA","SEMBLAI","SEMBLAIS","SEMBLAIT","SEMBLAMES","SEMBLANT","SEMBLAS","SEMBLATES","SEMBLE","SEMBLEE","SEMBLEES",
+  "SEMBLENT","SEMBLER","SEMBLERA","SEMBLERAI","SEMBLERAS","SEMBLEREZ","SEMBLES","SEMBLEZ","SEMBLIEZ","SEMBLIONS","SEMBLONS","SENSIBLE","SENSIBLES","SENTI","SENTIE",
+  "SENTIER","SENTIERS","SENTIES","SENTIR","SENTIRA","SENTIRAI","SENTIRAS","SENTIREZ","SENTIRONS","SENTIRONT","SENTIS","SENTISSEZ","SENTIT","SEPARA","SEPARAI",
+  "SEPARAIS","SEPARAIT","SEPARAMES","SEPARANT","SEPARAS","SEPARATES","SEPARE","SEPAREE","SEPAREES","SEPARENT","SEPARER","SEPARERA","SEPARERAI","SEPARERAS","SEPAREREZ",
+  "SEPARES","SEPAREZ","SEPARIEZ","SEPARIONS","SEPARONS","SEREIN","SEREINE","SEREINES","SEREINS","SERRA","SERRAI","SERRAIENT","SERRAIS","SERRAIT","SERRAMES",
+  "SERRANT","SERRAS","SERRATES","SERRE","SERREE","SERREES","SERRENT","SERRER","SERRERA","SERRERAI","SERRERAIS","SERRERAIT","SERRERAS","SERRERENT","SERREREZ",
+  "SERRERIEZ","SERRERONS","SERRERONT","SERRES","SERREZ","SERRIEZ","SERRIONS","SERRONS","SERVICE","SERVICES","SI","SIEGE","SIEGES","SIGNA","SIGNAI",
+  "SIGNAIENT","SIGNAIS","SIGNAIT","SIGNAL","SIGNAMES","SIGNANT","SIGNAS","SIGNATES","SIGNATURE","SIGNAUX","SIGNE","SIGNEE","SIGNEES","SIGNENT","SIGNER",
+  "SIGNERA","SIGNERAI","SIGNERAIS","SIGNERAIT","SIGNERAS","SIGNERENT","SIGNEREZ","SIGNERIEZ","SIGNERONS","SIGNERONT","SIGNES","SIGNEZ","SIGNIEZ","SIGNIONS","SIGNONS",
+  "SILENCE","SILENCES","SIMPLE","SIMPLES","SIMPLIFIA","SIMPLIFIE","SINCERE","SINCERES","SITUATION","SOCIAL","SOCIAUX","SOCIETE","SOCIETES","SOIGNA","SOIGNAI",
+  "SOIGNAIS","SOIGNAIT","SOIGNAMES","SOIGNANT","SOIGNAS","SOIGNATES","SOIGNE","SOIGNEE","SOIGNEES","SOIGNENT","SOIGNER","SOIGNERA","SOIGNERAI","SOIGNERAS","SOIGNEREZ",
+  "SOIGNES","SOIGNEZ","SOIGNIEZ","SOIGNIONS","SOIGNONS","SOLDAT","SOLDATS","SOLEIL","SOLEILS","SOLIDE","SOLIDES","SOLUTION","SOLUTIONS","SOMBRE","SOMBRES",
+  "SOMMEIL","SOMMEILS","SOMMET","SOMMETS","SON","SONDAGE","SONDAGES","SONS","SORTI","SORTIE","SORTIES","SORTIR","SORTIRA","SORTIRAI","SORTIRAS",
+  "SORTIREZ","SORTIRONS","SORTIRONT","SORTIRS","SORTIS","SORTISSEZ","SORTIT","SOULEVA","SOULEVAI","SOULEVAIS","SOULEVAIT","SOULEVANT","SOULEVAS","SOULEVE","SOULEVEE",
+  "SOULEVEES","SOULEVENT","SOULEVER","SOULEVERA","SOULEVES","SOULEVEZ","SOULEVIEZ","SOULEVONS","SOUPLE","SOUPLES","SOURCE","SOURCES","SOURIRE","SOUS","SOUTENIR",
+  "SOUVENT","SPECIAL","SPECIALE","SPECIALES","SPECIAUX","SPHERE","SPHERES","SPORT","SPORTS","STABLE","STABLES","STADE","STADES","STANDARD","STANDARDE",
+  "STANDARDS","STATION","STATIONS","STRATEGIE","STRICT","STRICTE","STRICTES","STRICTS","STRUCTURE","STUDIEUSE","STUDIEUX","STYLE","STYLES","SUBI","SUBIE",
+  "SUBIES","SUBIR","SUBIRA","SUBIRAI","SUBIRAS","SUBIREZ","SUBIRONS","SUBIRONT","SUBIS","SUBISSAIS","SUBISSAIT","SUBISSANT","SUBISSENT","SUBISSEZ","SUBISSIEZ",
+  "SUBISSONS","SUBIT","SUBTIL","SUBTILE","SUBTILES","SUBTILS","SUCCES","SUITE","SUITES","SUIVRE","SUJET","SUJETS","SUPERIEUR","SUPPOSA","SUPPOSAI",
+  "SUPPOSAIS","SUPPOSAIT","SUPPOSANT","SUPPOSAS","SUPPOSE","SUPPOSEE","SUPPOSEES","SUPPOSENT","SUPPOSER","SUPPOSERA","SUPPOSES","SUPPOSEZ","SUPPOSIEZ","SUPPOSONS","SUR",
+  "SURE","SURES","SURFACE","SURFACES","SURS","SURTOUT","SYMBOLE","SYMBOLES","SYSTEME","SYSTEMES","TA","TABLEAU","TABLEAUX","TALENT","TALENTS",
+  "TAPA","TAPAI","TAPAIENT","TAPAIS","TAPAIT","TAPAMES","TAPANT","TAPAS","TAPATES","TAPE","TAPEE","TAPEES","TAPENT","TAPER","TAPERA",
+  "TAPERAI","TAPERAIS","TAPERAIT","TAPERAS","TAPERENT","TAPEREZ","TAPERIEZ","TAPERIONS","TAPERONS","TAPERONT","TAPES","TAPEZ","TAPIEZ","TAPIONS","TAPONS",
+  "TARTINE","TARTINES","TE","TECHNIQUE","TEL","TEMOIN","TEMOINS","TENACE","TENACES","TENSION","TENSIONS","TERMINA","TERMINAI","TERMINAIS","TERMINAIT",
+  "TERMINANT","TERMINAS","TERMINE","TERMINEE","TERMINEES","TERMINENT","TERMINER","TERMINERA","TERMINES","TERMINEZ","TERMINIEZ","TERMINONS","TERRE","TERRES","TEXTE",
+  "TEXTES","THEATRE","THEATRES","THEORIE","THEORIES","TICKET","TICKETS","TIMBRE","TIMBRES","TIMIDE","TIMIDES","TIRA","TIRAI","TIRAIENT","TIRAIS",
+  "TIRAIT","TIRAMES","TIRANT","TIRAS","TIRATES","TIRE","TIREE","TIREES","TIRENT","TIRER","TIRERA","TIRERAI","TIRERAIS","TIRERAIT","TIRERAS",
+  "TIRERENT","TIREREZ","TIRERIEZ","TIRERIONS","TIRERONS","TIRERONT","TIRES","TIREZ","TIRIEZ","TIRIONS","TIRONS","TITRE","TITRES","TOIT","TOITS",
+  "TOLERANT","TOLERANTE","TOLERANTS","TOMBA","TOMBAI","TOMBAIENT","TOMBAIS","TOMBAIT","TOMBAMES","TOMBANT","TOMBAS","TOMBATES","TOMBE","TOMBEE","TOMBEES",
+  "TOMBENT","TOMBER","TOMBERA","TOMBERAI","TOMBERAIS","TOMBERAIT","TOMBERAS","TOMBERENT","TOMBEREZ","TOMBERIEZ","TOMBERONS","TOMBERONT","TOMBES","TOMBEZ","TOMBIEZ",
+  "TOMBIONS","TOMBONS","TON","TORCHE","TORCHES","TOTAL","TOTALE","TOTALES","TOTAUX","TOUCHA","TOUCHAI","TOUCHAIS","TOUCHAIT","TOUCHAMES","TOUCHANT",
+  "TOUCHAS","TOUCHATES","TOUCHE","TOUCHEE","TOUCHEES","TOUCHENT","TOUCHER","TOUCHERA","TOUCHERAI","TOUCHERAS","TOUCHEREZ","TOUCHES","TOUCHEZ","TOUCHIEZ","TOUCHIONS",
+  "TOUCHONS","TOUJOURS","TOURNA","TOURNAI","TOURNAIS","TOURNAIT","TOURNAMES","TOURNANT","TOURNAS","TOURNATES","TOURNE","TOURNEE","TOURNEES","TOURNENT","TOURNER",
+  "TOURNERA","TOURNERAI","TOURNERAS","TOURNEREZ","TOURNES","TOURNEZ","TOURNIEZ","TOURNIONS","TOURNONS","TOUT","TRADITION","TRAVAILLA","TRAVAILLE","TRAVERSA","TRAVERSAI",
+  "TRAVERSAS","TRAVERSE","TRAVERSEE","TRAVERSER","TRAVERSES","TRAVERSEZ","TRIBUNAL","TRIBUNAUX","TRONC","TRONCS","TROP","TROUVA","TROUVAI","TROUVAIS","TROUVAIT",
+  "TROUVAMES","TROUVANT","TROUVAS","TROUVATES","TROUVE","TROUVEE","TROUVEES","TROUVENT","TROUVER","TROUVERA","TROUVERAI","TROUVERAS","TROUVEREZ","TROUVES","TROUVEZ",
+  "TROUVIEZ","TROUVIONS","TROUVONS","TRÈS","TU","TUBE","TUBES","TUNNEL","TUNNELS","TUTEUR","TUTEURS","TYPE","TYPES","TYPIQUE","TYPIQUES",
+  "UN","UNE","UNI","UNIE","UNIES","UNIFORME","UNIFORMES","UNIQUE","UNIQUES","UNIR","UNIRA","UNIRAI","UNIRAS","UNIREZ","UNIRONS",
+  "UNIRONT","UNIS","UNISSAIS","UNISSAIT","UNISSANT","UNISSENT","UNISSEZ","UNISSIEZ","UNISSIONS","UNISSONS","UNIT","UNIVERS","UNIVERSEL","URGENCE","URGENCES",
+  "USAGE","USAGES","UTILE","UTILES","UTILISA","UTILISAI","UTILISAIS","UTILISAIT","UTILISANT","UTILISAS","UTILISE","UTILISEE","UTILISEES","UTILISENT","UTILISER",
+  "UTILISERA","UTILISES","UTILISEZ","UTILISIEZ","UTILISONS","VALEUR","VALEURS","VARIA","VARIABLE","VARIABLES","VARIAI","VARIAIENT","VARIAIS","VARIAIT","VARIAMES",
+  "VARIANT","VARIAS","VARIATES","VARIATION","VARIE","VARIEE","VARIEES","VARIENT","VARIER","VARIERA","VARIERAI","VARIERAIS","VARIERAIT","VARIERAS","VARIERENT",
+  "VARIEREZ","VARIERIEZ","VARIERONS","VARIERONT","VARIES","VARIEZ","VARIIEZ","VARIIONS","VARIONS","VASTE","VASTES","VEHICULE","VEHICULES","VENDEUR","VENDEURS",
+  "VENDRE","VENIR","VENT","VENTS","VERIFIA","VERIFIAI","VERIFIAIS","VERIFIAIT","VERIFIANT","VERIFIAS","VERIFIE","VERIFIEE","VERIFIEES","VERIFIENT","VERIFIER",
+  "VERIFIERA","VERIFIES","VERIFIEZ","VERIFIIEZ","VERIFIONS","VERRE","VERRES","VERS","VERSATILE","VERSION","VERSIONS","VETEMENT","VETEMENTS","VIEUSE","VIEUSES",
+  "VIEUX","VILLAGE","VILLAGES","VIOLENT","VIOLENTE","VIOLENTES","VIOLENTS","VIOLET","VIOLETS","VISIBLE","VISIBLES","VISION","VISIONS","VISITA","VISITAI",
+  "VISITAIS","VISITAIT","VISITAMES","VISITANT","VISITAS","VISITATES","VISITE","VISITEE","VISITEES","VISITENT","VISITER","VISITERA","VISITERAI","VISITERAS","VISITEREZ",
+  "VISITES","VISITEZ","VISITIEZ","VISITIONS","VISITONS","VITESSE","VITESSES","VIVANT","VIVANTE","VIVANTES","VIVANTS","VIVRE","VOISIN","VOISINAGE","VOISINS",
+  "VOITURE","VOITURES","VOLA","VOLAI","VOLAIENT","VOLAIS","VOLAIT","VOLAMES","VOLANT","VOLAS","VOLATES","VOLE","VOLEE","VOLEES","VOLENT",
+  "VOLER","VOLERA","VOLERAI","VOLERAIS","VOLERAIT","VOLERAS","VOLERENT","VOLEREZ","VOLERIEZ","VOLERIONS","VOLERONS","VOLERONT","VOLES","VOLEZ","VOLIEZ",
+  "VOLIONS","VOLONS","VOLONTE","VOLONTES","VOLUME","VOLUMES","VOS","VOULOI","VOULOIE","VOULOIES","VOULOIR","VOULOIRA","VOULOIRAI","VOULOIRAS","VOULOIREZ",
+  "VOULOIS","VOULOIT","VOUS","VOYAGA","VOYAGAI","VOYAGAIS","VOYAGAIT","VOYAGAMES","VOYAGANT","VOYAGAS","VOYAGATES","VOYAGE","VOYAGEE","VOYAGEES","VOYAGENT",
+  "VOYAGER","VOYAGERA","VOYAGERAI","VOYAGERAS","VOYAGEREZ","VOYAGES","VOYAGEUR","VOYAGEURS","VOYAGEZ","VOYAGIEZ","VOYAGIONS","VOYAGONS","VRAI","VRAIE","VRAIES",
+  "VRAIS","WAGON","WAGONS","ZEBRE","ZEBRES","ZESTE","ZESTES"
+]);
+
+/* ===================================================
+   ÉTAT GLOBAL
+   =================================================== */
+let gs = {};
+let timerInterval = null;
+let audioCtx = null;
+
+/* ===================================================
+   AUDIO
+   =================================================== */
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+function playStartSound() {
+  try {
+    const ctx = getAudioCtx();
+    [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+      const osc = ctx.createOscillator(), g = ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.type = 'sine'; osc.frequency.value = freq;
+      const t = ctx.currentTime + i * 0.12;
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.26, t + 0.06);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
+      osc.start(t); osc.stop(t + 0.5);
+    });
+  } catch(e){}
+}
+function playEndSound() {
+  try {
+    const ctx = getAudioCtx();
+    [783.99, 659.25, 523.25, 392.00].forEach((freq, i) => {
+      const osc = ctx.createOscillator(), g = ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.type = 'sine'; osc.frequency.value = freq;
+      const t = ctx.currentTime + i * 0.19;
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.28, t + 0.07);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
+      osc.start(t); osc.stop(t + 0.6);
+    });
+    const osc2 = ctx.createOscillator(), g2 = ctx.createGain();
+    osc2.connect(g2); g2.connect(ctx.destination);
+    osc2.type = 'triangle'; osc2.frequency.value = 261.63;
+    const t2 = ctx.currentTime + 0.75;
+    g2.gain.setValueAtTime(0, t2);
+    g2.gain.linearRampToValueAtTime(0.18, t2 + 0.1);
+    g2.gain.exponentialRampToValueAtTime(0.001, t2 + 1.3);
+    osc2.start(t2); osc2.stop(t2 + 1.4);
+  } catch(e){}
+}
+
+/* ===================================================
+   MODALE ERREUR
+   =================================================== */
+function showModal(icon, title, msg) {
+  document.getElementById('modal-icon').textContent  = icon;
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-msg').textContent   = msg;
+  document.getElementById('modal-error').style.display = 'flex';
+}
+function closeModal() {
+  document.getElementById('modal-error').style.display = 'none';
+}
+
+/* ===================================================
+   NAVIGATION
+   =================================================== */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function showSection(prefix, name) {
+  ['tirage','chrono','result'].forEach(p => {
+    const el = document.getElementById(prefix+'-'+p);
+    if (el) el.classList.remove('visible');
+  });
+  const t = document.getElementById(prefix+'-'+name);
+  if (t) t.classList.add('visible');
+}
+function backMenu() { clearTimer(); showScreen('screen-menu'); }
+function clearTimer() { if (timerInterval) { clearInterval(timerInterval); timerInterval = null; } }
+function pickRandom(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
+
+/* ===================================================
+   SÉLECTION DU TEMPS
+   =================================================== */
+function selectTime(prefix, secs, btn) {
+  gs.chosenTime = secs;
+  document.querySelectorAll(`#${prefix}-time-btns .time-btn`).forEach(b => b.classList.remove('selected','ch-sel'));
+  btn.classList.add('selected');
+  if (prefix === 'ch') btn.classList.add('ch-sel');
+}
+
+/* ===================================================
+   DÉMARRAGE
+   =================================================== */
+function startGame(type) {
+  clearTimer();
+  gs = { type, letters: [], chosenTime: null };
+  if (type === 'lettres') {
+    renderLtTiles('lt-tiles-draw', false);
+    document.getElementById('lt-count').textContent = '0 / 9 lettres tirées';
+    document.getElementById('lt-start-btn').style.display = 'none';
+    document.querySelectorAll('#lt-time-btns .time-btn').forEach(b => b.classList.remove('selected'));
+    document.getElementById('lt-solution-box').innerHTML = '';
+    showSection('lt','tirage');
+    showScreen('screen-lettres');
+  } else {
+    gs.plaques = []; gs.grandsPool = [...GRANDS_AVAIL];
+    renderChTiles('ch-tiles-draw', false);
+    document.getElementById('ch-count').textContent = '0 / 6 plaques tirées';
+    document.getElementById('ch-start-btn').style.display = 'none';
+    document.querySelectorAll('#ch-time-btns .time-btn').forEach(b => b.classList.remove('selected','ch-sel'));
+    document.getElementById('ch-solution-box').innerHTML = '';
+    showSection('ch','tirage');
+    showScreen('screen-chiffres');
+  }
+}
+function nouvellePartie(type) { startGame(type); }
+
+/* ===================================================
+   JEU LETTRES — TIRAGE
+   =================================================== */
+function tireLettres(type) {
+  if (gs.letters.length >= 9) {
+    showModal('🔤','Tirage terminé !','Toutes les 9 lettres ont déjà été tirées. Clique sur "Lancer" pour démarrer.');
+    return;
+  }
+  gs.letters.push({ l: type==='voyelle' ? pickRandom(VOYELLES) : pickRandom(CONSONNES), type });
+  renderLtTiles('lt-tiles-draw', true);
+  document.getElementById('lt-count').textContent = gs.letters.length + ' / 9 lettres tirées';
+  if (gs.letters.length >= 9) document.getElementById('lt-start-btn').style.display = '';
+}
+
+function renderLtTiles(containerId, animate) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  for (let i=0; i<9; i++) {
+    const d = document.createElement('div');
+    d.className = 'letter-tile';
+    if (i < gs.letters.length) {
+      d.textContent = gs.letters[i].l;
+      if (animate && i === gs.letters.length-1) d.classList.add('just-drawn');
+    } else {
+      d.classList.add('empty'); d.textContent = '?';
+    }
+    el.appendChild(d);
+  }
+}
+
+function lancerLettres() {
+  if (!gs.chosenTime) {
+    showModal('⏱','Temps non choisi !','Sélectionne une durée de réponse avant de lancer la manche.');
+    return;
+  }
+  if (gs.letters.length < 9) {
+    showModal('🔤','Lettres manquantes !','Il faut tirer les 9 lettres avant de lancer la manche.');
+    return;
+  }
+  renderLtTiles('lt-tiles-play', false);
+  showSection('lt','chrono');
+  playStartSound();
+  startTimer('lt', gs.chosenTime);
+}
+
+/* ===================================================
+   TIMER
+   =================================================== */
+function startTimer(prefix, duration) {
+  clearTimer();
+  const barEl = document.getElementById(prefix+'-bar');
+  const isLettres = prefix === 'lt';
+  barEl.style.transition = 'none';
+  barEl.style.width = '100%';
+  void barEl.offsetWidth;
+  barEl.style.transition = `width ${duration}s linear`;
+  requestAnimationFrame(() => { barEl.style.width = '0%'; });
+  let remaining = duration;
+  timerInterval = setInterval(() => {
+    remaining--;
+    if (remaining <= 0) {
+      clearTimer();
+      playEndSound();
+      if (isLettres) finLettres(); else finChiffres();
+    }
+  }, 1000);
+}
+
+/* ===================================================
+   FIN LETTRES + SOLVEUR
+   =================================================== */
+function finLettres() {
+  renderLtTiles('lt-tiles-result', false);
+  document.getElementById('lt-solution-box').innerHTML = '';
+  const btn = document.getElementById('lt-sol-btn');
+  btn.disabled = false; btn.textContent = '💡 Meilleure solution';
+  showSection('lt','result');
+}
+
+function showSolutionLettres() {
+  const btn = document.getElementById('lt-sol-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading-spinner"></span>Recherche…';
+  setTimeout(() => {
+    const avail = gs.letters.map(x => x.l);
+    // Chercher tous les mots valides, triés par longueur décroissante
+    let allValid = [];
+    for (const word of DICO) {
+      if (word.length > avail.length) continue;
+      if (canMakeWord(word, avail)) allValid.push(word);
+    }
+    allValid.sort((a,b) => b.length - a.length);
+    const best = allValid[0] || null;
+    // Afficher le meilleur + les alternatives de même longueur
+    const box = document.getElementById('lt-solution-box');
+    if (best) {
+      const sameLenWords = allValid.filter(w => w.length === best.length);
+      const alts = sameLenWords.length > 1 ? sameLenWords.slice(1,5) : [];
+      const pts = best.length===9
+        ? '🏆 10 points — toutes les lettres !'
+        : best.length+' lettres → '+best.length+' point'+(best.length>1?'s':'');
+      let altHtml = '';
+      if (alts.length) altHtml = `<div class="solution-words">Autres mots de même longueur : ${alts.join(' · ')}</div>`;
+      // Quelques mots un peu plus courts aussi
+      const shorter = allValid.filter(w => w.length === best.length - 1).slice(0,4);
+      if (shorter.length) altHtml += `<div class="solution-words" style="color:#80c870;">Mots de ${best.length-1} lettres : ${shorter.join(' · ')}</div>`;
+      box.innerHTML = `<div class="solution-box">
+        <div class="solution-title">✅ Meilleure solution</div>
+        <div class="solution-content"><span class="hl">${best.word}</span> — ${pts}</div>
+        ${altHtml}
+      </div>`;
+    } else {
+      box.innerHTML = `<div class="solution-box">
+        <div class="solution-title">Aucun mot trouvé dans le dictionnaire</div>
+        <div class="solution-content">Discutez des propositions avec la classe !</div>
+      </div>`;
+    }
+    btn.textContent = '✓ Solution affichée';
+  }, 80);
+}
+
+function canMakeWord(word, avail) {
+  const pool = [...avail];
+  for (const c of word) {
+    const i = pool.indexOf(c);
+    if (i===-1) return false;
+    pool.splice(i,1);
+  }
+  return true;
+}
+
+/* ===================================================
+   MODALE RÉPONSES ÉLÈVES — LETTRES
+   =================================================== */
+let ltAnswers = [];
+
+function openAnswersLettres() {
+  ltAnswers = [];
+  document.getElementById('lt-ans-list').innerHTML = '';
+  document.getElementById('lt-ans-input').value = '';
+  document.getElementById('lt-ans-sol').style.display = 'none';
+  document.getElementById('lt-ans-sol').innerHTML = '';
+  const avail = gs.letters.map(x=>x.l);
+  document.getElementById('lt-ans-letters-display').textContent =
+    'Lettres disponibles : ' + avail.join(' · ');
+  document.getElementById('modal-answers-lt').style.display = 'flex';
+  setTimeout(() => document.getElementById('lt-ans-input').focus(), 100);
+}
+
+function addAnswerLt() {
+  const inp = document.getElementById('lt-ans-input');
+  const word = inp.value.toUpperCase().trim();
+  inp.value = '';
+  if (!word) return;
+  const avail = gs.letters.map(x=>x.l);
+  const valid = canMakeWord(word, avail);
+  const pts = valid ? (word.length === 9 ? 10 : word.length) : 0;
+  const badge = valid
+    ? (pts >= 7 ? '<span class="answer-badge badge-correct">✓ '+pts+' pts</span>'
+                : '<span class="answer-badge badge-close">✓ '+pts+' pts</span>')
+    : '<span class="answer-badge badge-wrong">✗ Invalide</span>';
+  ltAnswers.push({ word, valid, pts });
+  const item = document.createElement('div');
+  item.className = 'answer-item ' + (valid ? (pts>=7?'correct':'close') : 'wrong');
+  item.innerHTML = `<span class="answer-word">${word}</span>${badge}
+    <button class="answer-del" onclick="removeAnswerLt(this,'${word}')">✕</button>`;
+  document.getElementById('lt-ans-list').appendChild(item);
+  inp.focus();
+}
+
+function removeAnswerLt(btn, word) {
+  ltAnswers = ltAnswers.filter(a=>a.word!==word);
+  btn.parentElement.remove();
+}
+
+function closeAnswersModal(prefix) {
+  document.getElementById('modal-answers-'+prefix).style.display = 'none';
+}
+
+function showSolInModal(prefix) {
+  if (prefix === 'lt') {
+    const avail = gs.letters.map(x=>x.l);
+    let allValid = [];
+    for (const word of DICO) {
+      if (word.length > avail.length) continue;
+      if (canMakeWord(word, avail)) allValid.push(word);
+    }
+    allValid.sort((a,b)=>b.length-a.length);
+    const best = allValid[0];
+    const solDiv = document.getElementById('lt-ans-sol');
+    solDiv.style.display = 'block';
+    if (best) {
+      const alts = allValid.filter(w=>w.length===best.length).slice(0,5).join(' · ');
+      solDiv.innerHTML = `<div class="sol-inline">
+        <div class="sol-inline-title">💡 Meilleure solution du dictionnaire</div>
+        <div class="sol-inline-content">${best} (${best.length} lettres)
+          ${alts !== best ? '<br><small style="font-size:0.85em;color:#80c870;">Autres : '+alts+'</small>' : ''}</div>
+      </div>`;
+    } else {
+      solDiv.innerHTML = `<div class="sol-inline"><div class="sol-inline-title">Aucun mot trouvé dans le dictionnaire interne</div></div>`;
+    }
+  } else {
+    const result = solveChiffres(gs.plaques.map(p=>p.v), gs.cible);
+    const solDiv = document.getElementById('ch-ans-sol');
+    solDiv.style.display = 'block';
+    if (result) {
+      const diff = Math.abs(result.val - gs.cible);
+      const pts = diff===0?'compte exact':diff<=5?`écart de ${diff}`:`écart de ${diff}`;
+      solDiv.innerHTML = `<div class="sol-inline">
+        <div class="sol-inline-title">💡 Meilleure solution calculée</div>
+        <div class="sol-inline-content">${result.expr} = ${result.val} <small style="color:#80c870;">(${pts})</small></div>
+      </div>`;
+    } else {
+      solDiv.innerHTML = `<div class="sol-inline"><div class="sol-inline-title">Aucune solution trouvée</div></div>`;
+    }
+  }
+}
+
+/* ===================================================
+   MODALE RÉPONSES ÉLÈVES — CHIFFRES
+   =================================================== */
+let chAnswers = [];
+
+function openAnswersChiffres() {
+  chAnswers = [];
+  document.getElementById('ch-ans-list').innerHTML = '';
+  document.getElementById('ch-ans-input').value = '';
+  document.getElementById('ch-ans-sol').style.display = 'none';
+  document.getElementById('ch-ans-sol').innerHTML = '';
+  document.getElementById('ch-ans-cible-display').textContent =
+    'Nombre cible : ' + gs.cible + ' — Plaques : ' + gs.plaques.map(p=>p.v).join(' · ');
+  document.getElementById('modal-answers-ch').style.display = 'flex';
+  setTimeout(() => document.getElementById('ch-ans-input').focus(), 100);
+}
+
+function addAnswerCh() {
+  const inp = document.getElementById('ch-ans-input');
+  const val = parseInt(inp.value);
+  inp.value = '';
+  if (isNaN(val)) return;
+  const diff = Math.abs(val - gs.cible);
+  let badge, cls;
+  if (diff === 0)      { badge = '<span class="answer-badge badge-correct">✓ Exact ! 10 pts</span>'; cls = 'correct'; }
+  else if (diff <= 5)  { badge = `<span class="answer-badge badge-close">± ${diff} → 7 pts</span>`;  cls = 'close'; }
+  else if (diff <= 10) { badge = `<span class="answer-badge badge-close">± ${diff} → 5 pts</span>`;  cls = 'close'; }
+  else                 { badge = `<span class="answer-badge badge-wrong">± ${diff} → 0 pt</span>`;   cls = 'wrong'; }
+  const item = document.createElement('div');
+  item.className = 'answer-item ' + cls;
+  item.innerHTML = `<span class="answer-word">${val}</span>${badge}
+    <button class="answer-del" onclick="this.parentElement.remove()">✕</button>`;
+  document.getElementById('ch-ans-list').appendChild(item);
+  inp.focus();
+}
+
+/* ===================================================
+   JEU CHIFFRES — TIRAGE
+   =================================================== */
+function tirePlaque(type) {
+  if (gs.plaques.length >= 6) {
+    showModal('🔢','Tirage terminé !','Les 6 plaques ont déjà été tirées. Clique sur "Lancer" pour démarrer.');
+    return;
+  }
+  if (type === 'grand') {
+    if (!gs.grandsPool.length) {
+      showModal('🔢','Plus de grands nombres !','Tu as déjà tiré les 4 grands nombres disponibles (25, 50, 75, 100). Tire un petit nombre.');
+      return;
+    }
+    const val = gs.grandsPool.splice(Math.floor(Math.random()*gs.grandsPool.length), 1)[0];
+    gs.plaques.push({ v:val, type });
+  } else {
+    gs.plaques.push({ v: Math.floor(Math.random()*10)+1, type });
+  }
+  renderChTiles('ch-tiles-draw', true);
+  document.getElementById('ch-count').textContent = gs.plaques.length + ' / 6 plaques tirées';
+  if (gs.plaques.length >= 6) document.getElementById('ch-start-btn').style.display = '';
+}
+
+function renderChTiles(containerId, animate) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  for (let i=0; i<6; i++) {
+    const d = document.createElement('div');
+    d.className = 'num-tile';
+    if (i < gs.plaques.length) {
+      d.textContent = gs.plaques[i].v;
+      if (animate && i===gs.plaques.length-1) d.classList.add('just-drawn');
+    } else {
+      d.classList.add('empty-tile'); d.textContent = '?';
+    }
+    el.appendChild(d);
+  }
+}
+
+function lancerChiffres() {
+  if (!gs.chosenTime) {
+    showModal('⏱','Temps non choisi !','Sélectionne une durée de réponse avant de lancer la manche.');
+    return;
+  }
+  if (gs.plaques.length < 6) {
+    showModal('🔢','Plaques manquantes !','Il faut tirer les 6 plaques avant de lancer la manche.');
+    return;
+  }
+  gs.cible = Math.floor(Math.random()*900)+100;
+  renderChTiles('ch-tiles-play', false);
+  document.getElementById('ch-cible-display').textContent = gs.cible;
+  showSection('ch','chrono');
+  playStartSound();
+  startTimer('ch', gs.chosenTime);
+}
+
+/* ===================================================
+   FIN CHIFFRES + SOLVEUR
+   =================================================== */
+function finChiffres() {
+  renderChTiles('ch-tiles-result', false);
+  document.getElementById('ch-cible-result').textContent = gs.cible;
+  document.getElementById('ch-solution-box').innerHTML = '';
+  const btn = document.getElementById('ch-sol-btn');
+  btn.disabled = false; btn.textContent = '💡 Meilleure solution';
+  showSection('ch','result');
+}
+
+function showSolutionChiffres() {
+  const btn = document.getElementById('ch-sol-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading-spinner"></span>Calcul…';
+  setTimeout(() => {
+    const result = solveChiffres(gs.plaques.map(p=>p.v), gs.cible);
+    const box = document.getElementById('ch-solution-box');
+    if (result) {
+      const diff = Math.abs(result.val - gs.cible);
+      const pts = diff===0 ? '10 points — compte exact !'
+        : diff<=5 ? `7 points — très proche (±${diff})`
+        : `5 points — proche (±${diff})`;
+      box.innerHTML = `<div class="solution-box">
+        <div class="solution-title">✅ Meilleure solution</div>
+        <div class="solution-content">${result.expr} = <span class="hl">${result.val}</span>
+          <br><small style="font-size:0.75em;color:#80c870;">${pts}</small></div>
+      </div>`;
+    } else {
+      box.innerHTML = `<div class="solution-box"><div class="solution-title">Aucune solution trouvée</div></div>`;
+    }
+    btn.textContent = '✓ Solution affichée';
+  }, 50);
+}
+
+/* ===================================================
+   SOLVEUR CHIFFRES — SIMPLIFIÉ
+   Priorité : opérations simples d'abord (peu d'étapes)
+   =================================================== */
+function solveChiffres(nums, target) {
+  // On cherche d'abord la solution la plus proche,
+  // en favorisant les expressions les plus courtes (peu de plaques utilisées)
+  let best = null;
+
+  function complexity(expr) {
+    // Compte le nombre d'opérations dans l'expression
+    return (expr.match(/[+\-×÷]/g)||[]).length;
+  }
+
+  function isBetter(candidate, current) {
+    if (!current) return true;
+    const dCand = Math.abs(candidate.val - target);
+    const dCurr = Math.abs(current.val - target);
+    if (dCand < dCurr) return true;
+    if (dCand === dCurr) {
+      // Préférer la solution la plus simple (moins d'opérations)
+      return complexity(candidate.expr) < complexity(current.expr);
+    }
+    return false;
+  }
+
+  function solve(available) {
+    for (const item of available) {
+      if (isBetter(item, best)) best = item;
+      if (best && Math.abs(best.val - target) === 0 && complexity(best.expr) === 0) return true;
+    }
+    if (Math.abs((best||{val:Infinity}).val - target) === 0) return true;
+    if (available.length < 2) return false;
+
+    for (let i=0; i<available.length; i++) {
+      for (let j=0; j<available.length; j++) {
+        if (i===j) continue;
+        const a=available[i], b=available[j];
+        const rest = available.filter((_,k)=>k!==i&&k!==j);
+        // Ordre des opérations : additions/soustractions d'abord (plus simples)
+        const ops = [
+          { v:a.val+b.val, e:a.expr+'+'+b.expr },
+          ...(a.val>b.val ? [{ v:a.val-b.val, e:a.expr+'-'+b.expr }] : []),
+          ...(a.val>1&&b.val>1 ? [{ v:a.val*b.val, e:a.expr+'×'+b.expr }] : []),
+          ...(b.val>1&&a.val%b.val===0 ? [{ v:a.val/b.val, e:a.expr+'÷'+b.expr }] : [])
+        ];
+        for (const op of ops) {
+          if (op.v>0 && op.v<=10000) {
+            // Parenthèses intelligentes : seulement si nécessaire
+            const needParen = op.e.includes('+') || op.e.includes('-');
+            const expr = rest.length > 0 && needParen ? '('+op.e+')' : op.e;
+            solve([...rest, { val:op.v, expr }]);
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  solve(nums.map(n=>({ val:n, expr:String(n) })));
+  return best;
+}
+</script>
+</body>
+</html>
