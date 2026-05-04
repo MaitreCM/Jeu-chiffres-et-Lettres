@@ -1183,7 +1183,7 @@ function showSolutionLettres() {
       if (shorter.length) altHtml += `<div class="solution-words" style="color:#80c870;">Mots de ${best.length-1} lettres : ${shorter.join(' · ')}</div>`;
       box.innerHTML = `<div class="solution-box">
         <div class="solution-title">✅ Meilleure solution</div>
-        <div class="solution-content"><span class="hl">${best.word}</span> — ${pts}</div>
+        <div class="solution-content"><span class="hl">${best}</span> — ${pts}</div>
         ${altHtml}
       </div>`;
     } else {
