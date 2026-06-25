@@ -178,6 +178,54 @@
   .cible-label { font-size: clamp(0.85rem, 1.2vw, 1.1rem); color: var(--text-muted); font-weight: 700; }
   .cible-num { font-family: 'Fredoka One', cursive; font-size: clamp(3.5rem, 10vw, 9rem); color: var(--text); line-height: 1; }
 
+  /* ---- Animation rouleaux cible ---- */
+  .cible-slots {
+    display: flex;
+    gap: clamp(6px, 1vw, 16px);
+    justify-content: center;
+    align-items: center;
+  }
+  .slot-wrap {
+    height: clamp(5rem, 12vw, 11rem);
+    overflow: hidden;
+    border-radius: var(--radius-sm);
+    background: var(--bg2);
+    border: 3px solid var(--border);
+    box-shadow: inset 0 4px 16px rgba(0,0,0,0.5), var(--shadow);
+    min-width: clamp(4rem, 9vw, 8.5rem);
+    position: relative;
+  }
+  /* reflets haut/bas */
+  .slot-wrap::before, .slot-wrap::after {
+    content: '';
+    position: absolute; left: 0; right: 0;
+    height: 35%;
+    z-index: 2;
+    pointer-events: none;
+  }
+  .slot-wrap::before { top: 0;    background: linear-gradient(to bottom, var(--bg2) 0%, transparent 100%); }
+  .slot-wrap::after  { bottom: 0; background: linear-gradient(to top,   var(--bg2) 0%, transparent 100%); }
+  .slot-strip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* translateY animé par JS */
+  }
+  .slot-digit {
+    height: clamp(5rem, 12vw, 11rem);
+    min-width: clamp(4rem, 9vw, 8.5rem);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(3rem, 8vw, 7.5rem);
+    color: #b8a070;
+    flex-shrink: 0;
+    user-select: none;
+  }
+  .slot-digit.final {
+    color: #e8d8a0;
+    text-shadow: 0 0 10px rgba(255,220,100,0.35);
+  }
+
   /* =========== SOLUTION =========== */
   .solution-box {
     background: #1a2e1a; border: 2px solid #3a6a2a; border-radius: var(--radius);
@@ -399,7 +447,7 @@
       <div class="tiles-row" id="ch-tiles-play"></div>
       <div class="cible-box">
         <div class="cible-label">NOMBRE CIBLE</div>
-        <div class="cible-num" id="ch-cible-display">---</div>
+        <div class="cible-slots" id="ch-cible-display"></div>
       </div>
       <div class="timer-section">
         <div class="timer-bar-wrap"><div class="timer-bar chiffres" id="ch-bar"></div></div>
@@ -1379,10 +1427,98 @@ function lancerChiffres() {
   }
   gs.cible = Math.floor(Math.random()*900)+100;
   renderChTiles('ch-tiles-play', false);
-  document.getElementById('ch-cible-display').textContent = gs.cible;
   showSection('ch','chrono');
-  playStartSound();
-  startTimer('ch', gs.chosenTime);
+  // Lancer l'animation de rouleaux, puis démarrer le chrono à la fin
+  animerCible(gs.cible, () => {
+    playStartSound();
+    startTimer('ch', gs.chosenTime);
+  });
+}
+
+/* ===================================================
+   ANIMATION ROULEAUX — tirage du nombre cible
+   =================================================== */
+function animerCible(cible, onDone) {
+  const digits = String(cible).split('');  // ex: ['3','4','7']
+  const container = document.getElementById('ch-cible-display');
+  container.innerHTML = '';
+
+  // Créer un slot par chiffre
+  const strips = digits.map((finalDigit, slotIndex) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'slot-wrap';
+    const strip = document.createElement('div');
+    strip.className = 'slot-strip';
+
+    // Remplir la bande : plusieurs tours de 0-9 + atterrissage sur finalDigit
+    const totalTurns = 3 + slotIndex; // chaque rouleau tourne un peu plus longtemps
+    const allDigits = [];
+    for (let t = 0; t < totalTurns; t++) {
+      for (let d = 0; d <= 9; d++) allDigits.push(d);
+    }
+    // Finir exactement sur le bon chiffre
+    const target = parseInt(finalDigit);
+    // Ajouter les chiffres de 0 jusqu'à la cible pour l'atterrissage final
+    for (let d = 0; d <= target; d++) allDigits.push(d);
+
+    allDigits.forEach(d => {
+      const el = document.createElement('div');
+      el.className = 'slot-digit';
+      el.textContent = d;
+      strip.appendChild(el);
+    });
+
+    wrap.appendChild(strip);
+    container.appendChild(wrap);
+    return { strip, totalDigits: allDigits.length, finalDigit: target };
+  });
+
+  // Animer chaque rouleau avec une durée croissante
+  const slotHeightVw = Math.min(12, window.innerHeight * 0.12);
+  const slotH = Math.max(80, Math.min(176, slotHeightVw * window.innerWidth / 100));
+
+  let done = 0;
+  strips.forEach(({ strip, totalDigits, finalDigit }, i) => {
+    const duration = 2200 + i * 900; // ms
+    const targetY   = -((totalDigits - 1) * slotH);
+
+    // Phase 1 : accélération rapide (CSS transition)
+    strip.style.transform = 'translateY(0px)';
+    strip.style.transition = 'none';
+
+    // Petit délai pour que le DOM soit prêt
+    setTimeout(() => {
+      strip.style.transition = `transform ${duration}ms cubic-bezier(0.15, 0.0, 0.1, 1.0)`;
+      strip.style.transform = `translateY(${targetY}px)`;
+
+      // À la fin : mettre le chiffre en surbrillance
+      setTimeout(() => {
+        const allEls = strip.querySelectorAll('.slot-digit');
+        allEls[allEls.length - 1].classList.add('final');
+        // Petit son de "clic" à l'arrêt
+        playSlotStop(i);
+        done++;
+        if (done === strips.length) {
+          setTimeout(onDone, 400);
+        }
+      }, duration);
+    }, 30 + i * 80);
+  });
+}
+
+function playSlotStop(index) {
+  try {
+    const ctx = getAudioCtx();
+    const freq = [880, 1046, 1318][index] || 880;
+    const osc = ctx.createOscillator(), g = ctx.createGain();
+    osc.connect(g); g.connect(ctx.destination);
+    osc.type = 'sine'; osc.frequency.value = freq;
+    const t = ctx.currentTime;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.22, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+    osc.start(t); osc.stop(t + 0.2);
+  } catch(e){}
 }
 
 /* ===================================================
