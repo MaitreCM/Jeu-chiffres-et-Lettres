@@ -285,7 +285,7 @@
 
   .answers-input-row { display: flex; gap: 0.7rem; margin-bottom: 1rem; }
   .answers-input {
-    flex: 1; font-family: 'Nunito', sans-serif; font-weight: 700; font-size: clamp(1.1rem, 1.8vw, 1.4rem);
+    flex: 1; font-family: 'Nunito', sans-serif; font-weight: 700; font-size: clamp(1.4rem, 2.2vw, 1.8rem);
     padding: 0.6rem 1rem; border-radius: var(--radius-sm); border: 2px solid var(--border);
     background: var(--card); color: var(--text); outline: none; text-transform: uppercase;
   }
@@ -307,8 +307,8 @@
   .answer-item.correct  { border-color: #3a8a2a; background: #1a2e1a; }
   .answer-item.close    { border-color: #7a6a10; background: #2a2510; }
   .answer-item.wrong    { border-color: #6a2020; background: #2a1010; }
-  .answer-word   { font-family: 'Nunito', sans-serif; font-weight: 700; font-size: clamp(1.1rem, 1.8vw, 1.4rem); color: var(--text); }
-  .answer-badge  { font-size: clamp(0.75rem, 1.1vw, 0.95rem); font-weight: 700; padding: 0.2rem 0.7rem; border-radius: 20px; }
+  .answer-word   { font-family: 'Nunito', sans-serif; font-weight: 700; font-size: clamp(3rem, 5vw, 4rem); color: var(--text); }
+  .answer-badge  { font-size: clamp(1rem, 1.5vw, 1.3rem); font-weight: 700; padding: 0.3rem 0.9rem; border-radius: 20px; }
   .badge-correct { background: #3a8a2a; color: #c8f0be; }
   .badge-close   { background: #7a6a10; color: #ffe090; }
   .badge-wrong   { background: #6a2020; color: #ffb0b0; }
@@ -1289,7 +1289,8 @@ function addAnswerLt() {
   item.className = 'answer-item ' + (valid ? (pts>=7?'correct':'close') : 'wrong');
   item.innerHTML = `<span class="answer-word">${word}</span>${badge}
     <button class="answer-del" onclick="removeAnswerLt(this,'${word}')">✕</button>`;
-  document.getElementById('lt-ans-list').appendChild(item);
+  const list = document.getElementById('lt-ans-list');
+  list.insertBefore(item, list.firstChild);
   inp.focus();
 }
 
